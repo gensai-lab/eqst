@@ -17,7 +17,7 @@ body {
     z-index: 1;
 }
 
-/* 放送ヘッダーの固定レイアウト */
+/* 放送ヘッダー：パディング撤廃 */
 #broadcast-header {
     position: absolute;
     top: 0;
@@ -28,20 +28,38 @@ body {
     z-index: 1000;
     display: flex;
     align-items: center;
-    padding: 0 40px;
+    padding: 0; /* パディングを完全に撤廃 */
     box-sizing: border-box;
-    gap: 30px;
 }
 
-/* 画像が巨大化しないための最重要設定 */
+/* 左側：最大震度＋長周期エリア */
+#header-left {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 画像サイズを枠内に収める */
 #broadcast-header img {
-    height: 80px;         /* 高さを固定 */
-    width: auto;          /* 比率を維持 */
-    object-fit: contain;  /* 歪みを防ぐ */
+    height: 100%;
+    width: auto;
+    object-fit: contain;
+}
+
+/* 長周期地震動の表示スタイル */
+#lp-info {
+    color: white;
+    font-weight: bold;
+    font-size: 24px;
+    padding: 0 10px;
+    background: rgba(255, 165, 0, 0.8); /* オレンジ系で警告風 */
+    border-radius: 4px;
 }
 
 #info-text {
     color: white;
-    font-size: 32px;
+    font-size: 28px;
     font-family: sans-serif;
+    padding-left: 20px;
 }
