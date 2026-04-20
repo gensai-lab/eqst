@@ -71,8 +71,8 @@ html, body {
 /* 最大震度・長周期画像コンテナ */
 #max-scale-container {
     position: absolute;
-    top: 50%;      /* 位置はデベロッパーツールで微調整してください */
-    left: 50%;     /* 位置はデベロッパーツールで微調整してください */
+    top: 0%;      /* 位置はデベロッパーツールで微調整してください */
+    left: 0%;     /* 位置はデベロッパーツールで微調整してください */
     z-index: 1001;
     display: flex;
     flex-direction: column; /* 縦に並べる */
@@ -83,5 +83,5 @@ html, body {
 #max-scale-container img {
     height: auto;
     width: 100%; 
-    max-width: 200px; /* 画像サイズ調整用 */
+    max-width: 470px; /* 画像サイズ調整用 */
 }
