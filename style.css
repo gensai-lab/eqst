@@ -47,17 +47,26 @@ html, body {
     position: absolute;
     color: #fff;
     font-weight: bold;
-    font-size: 2.2vw; /* 基本の数字サイズ */
+    font-size: 2.2vw;
     z-index: 1001;
 }
 
-/* 単位部分だけ小さくする */
+/* 単位部分を小さくする */
 .unit {
-    font-size: 0.8em; /* 数字に対して60%のサイズ */
+    font-size: 0.8em;
     margin-left: 2px;
 }
 
+/* 半角スペース用クラス */
+.space {
+    display: inline-block;
+}
+
+/* 各項目の位置調整（必要に応じて微調整してください） */
 #time-val { top: 28%; left: 35%; }
 #mag-val  { top: 28%; left: 66.5%; }
 #hypo-val { top: 72%; left: 35%; }
 #depth-val { top: 72%; left: 66.5%; }
+
+/* 最大震度（仮の位置です） */
+#max-scale-val { top: 50%; left: 50%; }
