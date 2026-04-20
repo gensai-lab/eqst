@@ -1,3 +1,7 @@
+// --- グローバル変数 ---
+let eewImg, farImg;
+
+// --- APIデータ取得 ---
 async function fetchEarthquakeData() {
     try {
         const response = await fetch('https://api.p2pquake.net/v2/history?codes=551&limit=1');
@@ -6,6 +10,7 @@ async function fetchEarthquakeData() {
     } catch (e) { console.error(e); }
 }
 
+// --- 日付フォーマット ---
 function formatDate(timeStr) {
     const parts = timeStr.split(' '); 
     const dateParts = parts[0].split('/'); 
@@ -18,6 +23,7 @@ function formatDate(timeStr) {
     return `${day}<span class="unit">日</span><span class="space"> </span>${hour}<span class="unit">時</span><span class="space"> </span>${min}<span class="unit">分ごろ</span>`;
 }
 
+// --- ヘルパー関数 ---
 function createBannerImg(filename) {
     const img = document.createElement('img');
     img.src = `assets/banner/${filename}.png`;
@@ -31,13 +37,32 @@ function createTsunamiImg(filename) {
     return img;
 }
 
+// --- 初期化処理（バナー生成） ---
+function initBanners() {
+    const infoContainer = document.getElementById('info-banner-container');
+    const eewFarContainer = document.createElement('div');
+    eewFarContainer.id = 'eew-far-container';
+    infoContainer.appendChild(eewFarContainer);
+    
+    // EEW画像と遠地地震画像を先に生成して追加しておく
+    eewImg = createBannerImg('eew');
+    eewImg.classList.add('banner-item');
+    eewFarContainer.appendChild(eewImg);
+    
+    farImg = createBannerImg('enchi');
+    farImg.classList.add('banner-item');
+    eewFarContainer.appendChild(farImg);
+}
+
+// --- UI更新処理 ---
 function renderUI(eq) {
+    // 1. テキスト反映
     document.getElementById('time-val').innerHTML = formatDate(eq.earthquake.time);
     document.getElementById('mag-val').innerText = `M${eq.earthquake.hypocenter.magnitude.toFixed(1)}`;
     document.getElementById('hypo-val').innerText = eq.earthquake.hypocenter.name;
     document.getElementById('depth-val').innerText = `${eq.earthquake.hypocenter.depth}km`;
 
-    // 最大震度・長周期
+    // 2. 最大震度・長周期画像
     const scaleContainer = document.getElementById('max-scale-container');
     scaleContainer.innerHTML = '';
     const scaleMap = { 
@@ -50,45 +75,32 @@ function renderUI(eq) {
 
     if (lpIntensity && lpIntensity > 0) {
         const sName = (maxScale && scaleMap[maxScale]) ? `cj_s${scaleMap[maxScale]}` : 'cj_s0';
-        const cName = `cj_c${lpIntensity}`;
         scaleContainer.appendChild(createBannerImg(sName));
-        scaleContainer.appendChild(createBannerImg(cName));
+        scaleContainer.appendChild(createBannerImg(`cj_c${lpIntensity}`));
     } else {
         const sName = (maxScale && scaleMap[maxScale]) ? scaleMap[maxScale] : '0';
         scaleContainer.appendChild(createBannerImg(sName));
     }
 
-    // 情報バナー（津波、EEW、遠地）
+    // 3. 津波情報（バナー更新）
     const infoContainer = document.getElementById('info-banner-container');
-    infoContainer.innerHTML = '';
-
-    // 津波
+    // 津波バナーを一旦探して削除
+    const existingTsunami = document.getElementById('tsunami-banner');
+    if (existingTsunami) existingTsunami.remove();
+    
     const tsunamiMap = { 'None': 'tm_n', 'Warning': 'tm_k', 'Alarm': 'tm_o', 'Advisory': 'tm_c', 'Watch': 'tm_j' };
-    const tsunamiFileName = tsunamiMap[eq.earthquake.domesticTsunami] || 'tm_n';
-    infoContainer.appendChild(createTsunamiImg(tsunamiFileName));
+    const tFileName = tsunamiMap[eq.earthquake.domesticTsunami] || 'tm_n';
+    
+    // コンテナの先頭に津波画像を挿入
+    const tsunamiBanner = createTsunamiImg(tFileName);
+    infoContainer.prepend(tsunamiBanner);
 
-    // EEWと遠地地震コンテナ
-    const eewFarContainer = document.createElement('div');
-    eewFarContainer.id = 'eew-far-container';
-    infoContainer.appendChild(eewFarContainer);
-
-    // EEW
-    if (eq.earthquake.eew) {
-        const eewImg = createBannerImg('eew'); // ファイル名を eew.png に修正
-        eewImg.classList.add('banner-item');
-        eewImg.style.display = 'block';
-        eewFarContainer.appendChild(eewImg);
-    }
-
-    // 遠地地震
-    if (eq.earthquake.hypocenter.name.includes('海外')) {
-        const farImg = createBannerImg('enchi'); // ファイル名を enchi.png に修正
-        farImg.classList.add('banner-item');
-        farImg.style.display = 'block';
-        eewFarContainer.appendChild(farImg);
-    }
+    // 4. EEW/遠地地震 opacity 制御
+    eewImg.classList.toggle('active', eq.earthquake.eew);
+    farImg.classList.toggle('active', eq.earthquake.hypocenter.name.includes('海外'));
 }
 
+// --- 地図初期化 ---
 function initMap() {
     const map = L.map('map', { 
         zoomControl: false, attributionControl: false, dragging: false, zoom: false 
@@ -96,13 +108,15 @@ function initMap() {
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 }
 
+// --- ページ読み込み時 ---
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
+    initBanners();
     fetchEarthquakeData();
     setInterval(fetchEarthquakeData, 30000);
 });
 
-// 【テスト用】様々なパターンを呼び出せる関数
+// --- テスト用関数 ---
 window.testDisplay = (scenario) => {
     let testData = {
         earthquake: {
@@ -110,27 +124,22 @@ window.testDisplay = (scenario) => {
             hypocenter: { name: "テスト震源", magnitude: 7.0, depth: 10 },
             maxScale: 30,
             longPeriodIntensity: 0,
-            domesticTsunami: 'None', // 初期値
-            eew: false,             // 初期値
+            domesticTsunami: 'None',
+            eew: false,
         }
     };
 
     if (scenario === 'full') {
-        // 全てを表示（津波警報 + EEW + 遠地地震）
         testData.earthquake.domesticTsunami = 'Warning';
         testData.earthquake.eew = true;
         testData.earthquake.hypocenter.name = '海外（テスト震源）';
     } else if (scenario === 'tsunami') {
-        // 津波警報のみ
         testData.earthquake.domesticTsunami = 'Warning';
     } else if (scenario === 'eew') {
-        // EEWのみ
         testData.earthquake.eew = true;
     } else if (scenario === 'far') {
-        // 遠地地震のみ
         testData.earthquake.hypocenter.name = '海外（テスト震源）';
     }
 
     renderUI(testData);
-    console.log(`テストシナリオ「${scenario}」を適用しました。`);
 };
