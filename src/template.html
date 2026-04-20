@@ -2,16 +2,31 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
-    <div id="header-banner">
+    <div id="broadcast-header">
+        <div id="header-left">
+            <img src="../assets/banner/6p.png" alt="最大震度">
         </div>
+        <div id="header-center">
+            <img src="../assets/label/time.png" alt="発生日時">
+            <img src="../assets/label/hypocenter.png" alt="震源地">
+            <img src="../assets/label/magnitude.png" alt="規模">
+            <img src="../assets/label/depth.png" alt="深さ">
+        </div>
+        <div id="header-right">
+            <img src="../assets/banner/tm_n.png" alt="津波情報">
+            <div class="status-box">
+                <img src="../assets/banner/eew.png" alt="EEW">
+                <img src="../assets/banner/enchi.png" alt="遠地">
+            </div>
+        </div>
+    </div>
+
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
-    <script src="script.js"></script>
 </body>
 </html>
