@@ -51,7 +51,7 @@ html, body {
     z-index: 1001;
 }
 
-/* 単位部分を小さくする */
+/* 単位部分だけ小さくする */
 .unit {
     font-size: 0.8em;
     margin-left: 2px;
@@ -62,11 +62,26 @@ html, body {
     display: inline-block;
 }
 
-/* 各項目の位置調整（必要に応じて微調整してください） */
+/* 各テキスト項目の位置 */
 #time-val { top: 28%; left: 35%; }
 #mag-val  { top: 28%; left: 66.5%; }
 #hypo-val { top: 72%; left: 35%; }
 #depth-val { top: 72%; left: 66.5%; }
 
-/* 最大震度（仮の位置です） */
-#max-scale-val { top: 50%; left: 50%; }
+/* 最大震度・長周期画像コンテナ */
+#max-scale-container {
+    position: absolute;
+    top: 50%;      /* 位置はデベロッパーツールで微調整してください */
+    left: 50%;     /* 位置はデベロッパーツールで微調整してください */
+    z-index: 1001;
+    display: flex;
+    flex-direction: column; /* 縦に並べる */
+    gap: 5px;               /* 画像間の隙間 */
+    align-items: center;    /* 中央揃え */
+}
+
+#max-scale-container img {
+    height: auto;
+    width: 100%; 
+    max-width: 200px; /* 画像サイズ調整用 */
+}
