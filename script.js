@@ -19,10 +19,18 @@ function formatDate(timeStr) {
     return `${day}<span class="unit">日</span><span class="space"> </span>${hour}<span class="unit">時</span><span class="space"> </span>${min}<span class="unit">分ごろ</span>`;
 }
 
-// 画像生成ヘルパー
-function createImg(filename) {
+// 画像生成ヘルパー（震度・長周期用）
+function createBannerImg(filename) {
     const img = document.createElement('img');
     img.src = `assets/banner/${filename}.png`;
+    return img;
+}
+
+// ▼ 新設：画像生成ヘルパー（津波用）
+function createTsunamiImg(filename) {
+    const img = document.createElement('img');
+    img.src = `assets/banner/${filename}.png`;
+    img.id = 'tsunami-banner';
     return img;
 }
 
@@ -33,9 +41,9 @@ function renderUI(eq) {
     document.getElementById('hypo-val').innerText = eq.earthquake.hypocenter.name;
     document.getElementById('depth-val').innerText = `${eq.earthquake.hypocenter.depth}km`;
 
-    // ▼ 画像表示ロジック
-    const container = document.getElementById('max-scale-container');
-    container.innerHTML = ''; // 一度クリア
+    // --- 最大震度・長周期画像表示ロジック ---
+    const scaleContainer = document.getElementById('max-scale-container');
+    scaleContainer.innerHTML = ''; // 一度クリア
 
     const scaleMap = { 
         10: '1', 20: '2', 30: '3', 40: '4', 
@@ -51,13 +59,55 @@ function renderUI(eq) {
         const sName = (maxScale && scaleMap[maxScale]) ? `cj_s${scaleMap[maxScale]}` : 'cj_s0';
         const cName = `cj_c${lpIntensity}`;
         
-        container.appendChild(createImg(sName)); // 上段
-        container.appendChild(createImg(cName)); // 下段
+        scaleContainer.appendChild(createBannerImg(sName)); // 上段
+        scaleContainer.appendChild(createBannerImg(cName)); // 下段
     } else {
         // --- 長周期が観測されていない場合 ---
         const sName = (maxScale && scaleMap[maxScale]) ? scaleMap[maxScale] : '0';
         
-        container.appendChild(createImg(sName)); // 震度画像のみ
+        scaleContainer.appendChild(createBannerImg(sName)); // 震度画像のみ
+    }
+
+    // --- ▼ 新設：情報バナー（津波、EEW、遠地地震）表示ロジック ---
+    const infoContainer = document.getElementById('info-banner-container');
+    infoContainer.innerHTML = ''; // 一度クリア
+
+    // 1. 津波情報
+    const tsunamiMap = {
+        'None': 'tm_n',
+        'Warning': 'tm_k',
+        'Alarm': 'tm_o',
+        'Advisory': 'tm_c',
+        'Watch': 'tm_j'
+    };
+    const domesticTsunami = eq.earthquake.domesticTsunami;
+    const tsunamiFileName = tsunamiMap[domesticTsunami] || 'tm_n';
+    infoContainer.appendChild(createTsunamiImg(tsunamiFileName));
+
+    // 2. EEWと遠地地震のコンテナ
+    const eewFarContainer = document.createElement('div');
+    eewFarContainer.id = 'eew-far-container';
+    infoContainer.appendChild(eewFarContainer);
+
+    // 3. EEW発表
+    const eewEnabled = eq.earthquake.eew;
+    if (eewEnabled) {
+        const eewImg = createBannerImg('eew_on'); // EEW発表中の画像名
+        eewImg.classList.add('banner-item');
+        eewImg.style.display = 'block'; // 表示
+        eewFarContainer.appendChild(eewImg);
+    }
+
+    // 4. 遠地地震
+    const hypocenterName = eq.earthquake.hypocenter.name;
+    // 震源地名に「海外」が含まれるか、震央地名コードが900系の場合を遠地地震と判定（簡易版）
+    // P2P API仕様書を元に判定ロジックを組んでください。
+    const isFarEarthquake = hypocenterName.includes('海外'); 
+    if (isFarEarthquake) {
+        const farImg = createBannerImg('far_on'); // 遠地地震の画像名
+        farImg.classList.add('banner-item');
+        farImg.style.display = 'block'; // 表示
+        eewFarContainer.appendChild(farImg);
     }
 }
 
@@ -82,9 +132,11 @@ window.testLPGM = () => {
     const testData = {
         earthquake: {
             time: "2026/04/20 12:00:00",
-            hypocenter: { name: "テスト用震源", magnitude: 7.0, depth: 10 },
+            hypocenter: { name: "テスト用震源（海外）", magnitude: 7.0, depth: 10 },
             maxScale: 55, // 震度6弱（テスト用）
-            longPeriodIntensity: 3 // 長周期地震動階級3（テスト用）
+            longPeriodIntensity: 3, // 長周期地震動階級3（テスト用）
+            domesticTsunami: 'Warning', // 津波警報（テスト用）
+            eew: true // EEW発表中（テスト用）
         }
     };
     renderUI(testData);
