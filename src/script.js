@@ -10,6 +10,7 @@ function getScaleStr(scale) {
 }
 
 // 2. ヘッダー画像の描画ロジック
+// 【修正点】../ を付与して、srcフォルダから一つ上の階層のassetsへアクセスするようにしました
 function updateHeader(earthquakeData) {
     const banner = document.getElementById('header-banner');
     if (!banner) return;
@@ -22,16 +23,16 @@ function updateHeader(earthquakeData) {
     if (longPeriod) {
         // --- 長周期地震動あり：上下並び ---
         banner.style.flexDirection = 'column';
-        banner.style.gap = '5px'; // 画像間の隙間
+        banner.style.gap = '5px'; 
 
         // 上段：最大震度画像 (cj_sX.png)
         const imgS = document.createElement('img');
-        imgS.src = `assets/banner/cj_s${getScaleStr(maxScale)}.png`;
-        imgS.style.height = '100px'; // デザインに合わせて調整してください
+        imgS.src = `../assets/banner/cj_s${getScaleStr(maxScale)}.png`;
+        imgS.style.height = '100px'; 
         
         // 下段：長周期階級画像 (cj_cX.png)
         const imgC = document.createElement('img');
-        imgC.src = `assets/banner/cj_c${longPeriod.maxScale}.png`;
+        imgC.src = `../assets/banner/cj_c${longPeriod.maxScale}.png`;
         imgC.style.height = '100px';
         
         banner.appendChild(imgS);
@@ -41,55 +42,46 @@ function updateHeader(earthquakeData) {
         banner.style.flexDirection = 'row';
         
         const img = document.createElement('img');
-        img.src = `assets/banner/${getScaleStr(maxScale)}.png`;
+        img.src = `../assets/banner/${getScaleStr(maxScale)}.png`;
         img.style.height = '100px';
-        
         banner.appendChild(img);
     }
 }
 
 // 3. 地図の初期化 (Leaflet)
 function initMap() {
-    // #map に対して地図を作成
     const map = L.map('map', { 
         zoomControl: false, 
         attributionControl: false 
     }).setView([36.0, 138.0], 6);
 
-    // タイルレイヤー（OSMなど）の追加
+    // タイルレイヤー
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        // 必要に応じて別のスタイルに変更可能
     }).addTo(map);
 
     return map;
 }
 
-// 4. メイン処理（APIデータが渡された時に実行）
+// 4. メイン処理
 function renderSimulation(data) {
     // 地図の初期化
     const map = initMap();
 
     // ヘッダーの更新
     updateHeader(data.earthquake);
-
-    // --- 今後の拡張 ---
-    // ここで data.points をループして、震度アイコンをLeafletに追加していきます
-    // data.points.forEach(p => { ... });
     
     console.log("シミュレーションの描画準備完了", data);
 }
 
-// テスト用：ブラウザで開いた際に動作確認するためのダミーデータ
-// 実際はGitHub Actionsからデータを流し込む想定です
+// テスト用データ（長周期地震動ありのケース）
 const dummyData = {
     earthquake: {
         maxScale: 50, // 5強
-        longPeriodGroundMotion: { maxScale: 2 } // テスト用に階級2を入れる
+        longPeriodGroundMotion: { maxScale: 2 } 
     }
 };
 
 // 読み込み完了後に実行
 document.addEventListener('DOMContentLoaded', () => {
-    // 本番稼働時はこの renderSimulation を外部から呼び出します
     renderSimulation(dummyData);
 });
