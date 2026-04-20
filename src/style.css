@@ -7,7 +7,7 @@ body {
     background-color: #000;
 }
 
-/* 地図を一番下のレイヤーに固定 */
+/* 1. 地図レイヤー（一番下） */
 #map {
     position: absolute;
     top: 0; left: 0;
@@ -15,26 +15,27 @@ body {
     z-index: 1;
 }
 
-/* 放送用ヘッダー（絶対配置で画面上部にピン留め） */
+/* 2. 放送ヘッダー（絶対配置で最前面） */
 #broadcast-header {
     position: absolute;
     top: 20px; left: 20px; right: 20px;
     height: 120px;
-    z-index: 1000; /* 地図より手前に出す */
-    
+    z-index: 1000;
     display: flex;
     align-items: center;
     gap: 20px;
+    background: rgba(0,0,0,0.5); /* 視認性向上のための薄い黒背景 */
 }
 
-/* 画像サイズを枠内に収めるための共通設定 */
-img {
-    height: 100%; /* コンテナの高さに合わせる */
-    width: auto;
-    object-fit: contain;
+/* 3. 【最重要】画像サイズ制御 */
+#broadcast-header img {
+    height: 100%;       /* 親要素(120px)に合わせる */
+    width: auto;        /* 比率維持 */
+    object-fit: contain; /* 歪まないように枠に収める */
+    display: block;
 }
 
-/* 各エリアの調整 */
-#header-left { height: 100%; }
-#header-center { height: 60%; display: flex; gap: 10px; }
-#header-right { height: 60%; display: flex; flex-direction: column; gap: 5px; }
+/* 各エリア */
+#header-left { height: 100%; display: flex; align-items: center; }
+#header-center { height: 80%; display: flex; align-items: center; gap: 10px; }
+#header-right { height: 80%; display: flex; align-items: center; gap: 10px; }
