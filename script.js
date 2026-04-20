@@ -76,3 +76,17 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchEarthquakeData();
     setInterval(fetchEarthquakeData, 30000);
 });
+
+// 【テスト用】コンソールで実行すると強制的に表示をテストできる関数
+window.testLPGM = () => {
+    const testData = {
+        earthquake: {
+            time: "2026/04/20 12:00:00",
+            hypocenter: { name: "テスト用震源", magnitude: 7.0, depth: 10 },
+            maxScale: 55, // 震度6弱（テスト用）
+            longPeriodIntensity: 3 // 長周期地震動階級3（テスト用）
+        }
+    };
+    renderUI(testData);
+    console.log("テストデータを適用しました。");
+};
