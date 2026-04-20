@@ -53,7 +53,7 @@ html, body {
 
 /* 単位部分だけ小さくする */
 .unit {
-    font-size: 1.2em; /* 数字に対して60%のサイズ */
+    font-size: 0.8em; /* 数字に対して60%のサイズ */
     margin-left: 2px;
 }
 
