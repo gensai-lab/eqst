@@ -88,7 +88,14 @@ function renderUI(eq) {
     const existingTsunami = document.getElementById('tsunami-banner');
     if (existingTsunami) existingTsunami.remove();
     
-    const tsunamiMap = { 'None': 'tm_n', 'Warning': 'tm_k', 'Alarm': 'tm_o', 'Advisory': 'tm_c', 'Watch': 'tm_j' };
+    // 修正: 警報類を tm_i に統合
+    const tsunamiMap = { 
+        'None': 'tm_n', 
+        'Watch': 'tm_j',    // 若干の海面変動
+        'Advisory': 'tm_i', // 津波注意報
+        'Warning': 'tm_i',  // 津波警報
+        'Alarm': 'tm_i'     // 大津波警報
+    };
     const tFileName = tsunamiMap[eq.earthquake.domesticTsunami] || 'tm_n';
     
     // コンテナの先頭に津波画像を挿入
