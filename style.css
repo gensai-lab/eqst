@@ -1,8 +1,15 @@
-/* 全要素の余白を強制リセット */
+/* フォント定義 */
+@font-face {
+    font-family: 'UDKakugo';
+    src: url('assets/UDKakugoDB.otf') format('opentype');
+}
+
+/* 全要素の余白リセット・フォント適用 */
 * {
     margin: 0 !important;
     padding: 0 !important;
     box-sizing: border-box !important;
+    font-family: 'UDKakugo', sans-serif;
 }
 
 html, body {
@@ -21,7 +28,6 @@ html, body {
     z-index: 1;
 }
 
-/* 放送ヘッダー：背景画像を基準に配置 */
 #broadcast-header {
     position: absolute;
     top: 0;
@@ -37,17 +43,14 @@ html, body {
     display: block;
 }
 
-/* 動的テキストの共通設定 */
 .data-overlay {
     position: absolute;
     color: #fff;
     font-weight: bold;
-    font-family: sans-serif;
     font-size: 2vw;
     z-index: 1001;
 }
 
-/* 各項目の位置調整（back.pngに合わせて微調整してください） */
 #time-val { top: 15%; left: 35%; }
 #mag-val  { top: 15%; left: 75%; }
 #hypo-val { top: 60%; left: 35%; }
