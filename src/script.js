@@ -15,7 +15,12 @@ function renderUI(eq) {
 }
 
 function initMap() {
-    const map = L.map('map', { zoomControl: false, attributionControl: false, dragging: false, zoom: false }).setView([36.0, 138.0], 5);
+    const map = L.map('map', { 
+        zoomControl: false, 
+        attributionControl: false, 
+        dragging: false, 
+        zoom: false 
+    }).setView([36.0, 138.0], 5);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 }
 
