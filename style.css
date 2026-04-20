@@ -83,5 +83,5 @@ html, body {
 #max-scale-container img {
     height: auto;
     width: 100%; 
-    max-width: 471px; /* 画像サイズ調整用 */
+    max-width: 475px; /* 画像サイズ調整用 */
 }
