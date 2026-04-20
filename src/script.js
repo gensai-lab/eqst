@@ -1,9 +1,8 @@
 window.currentEarthquakeData = null;
 
-// APIから情報を取得
+// P2P地震情報APIからデータを取得
 async function fetchEarthquakeData() {
     try {
-        // P2P地震情報API (地震情報:551)
         const response = await fetch('https://api.p2pquake.net/v2/history?codes=551&limit=1');
         if (!response.ok) throw new Error('API取得失敗');
         
@@ -53,8 +52,9 @@ function renderUI(earthquake) {
 
 // 地図初期化
 function initMap() {
+    // ズーム設定を少し広めにして日本全体が見えやすく調整
     const map = L.map('map', { zoomControl: false, attributionControl: false })
-                 .setView([36.0, 138.0], 6);
+                 .setView([36.0, 138.0], 5);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     return map;
 }
@@ -63,5 +63,5 @@ function initMap() {
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
     fetchEarthquakeData();
-    setInterval(fetchEarthquakeData, 30000); // 30秒毎に更新
+    setInterval(fetchEarthquakeData, 30000); // 30秒毎に自動更新
 });
