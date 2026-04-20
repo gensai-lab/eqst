@@ -85,3 +85,37 @@ html, body {
     width: 100%; 
     max-width: 475px; /* 画像サイズ調整用 */
 }
+
+/* ▼ 新設：情報バナーコンテナ（右上） */
+#info-banner-container {
+    position: absolute;
+    top: 20px;    /* 上からの位置 */
+    right: 20px;   /* 右からの位置 */
+    z-index: 1001;
+    display: flex;
+    flex-direction: column; /* 縦に並べる */
+    gap: 10px;               /* バナー間の隙間 */
+    align-items: flex-end;    /* 右揃え */
+}
+
+/* 津波バナー */
+#tsunami-banner {
+    height: auto;
+    width: auto;
+    max-width: 300px; /* 横幅の最大値 */
+}
+
+/* EEWと遠地地震のコンテナ */
+#eew-far-container {
+    display: flex;
+    flex-direction: row; /* 横に並べる */
+    gap: 10px;           /* EEWと遠地地震の隙間 */
+}
+
+/* 各バナーアイテム（EEW、遠地地震） */
+.banner-item {
+    height: auto;
+    width: auto;
+    max-width: 150px; /* 各バナーの横幅の最大値 */
+    display: none;    /* 初期状態は非表示 */
+}
