@@ -1,41 +1,47 @@
-/* 画面全体を固定 */
 body {
-    margin: 0; padding: 0;
-    width: 1920px; height: 1080px;
+    margin: 0;
+    padding: 0;
+    width: 1920px;
+    height: 1080px;
     overflow: hidden;
     position: relative;
     background-color: #000;
 }
 
-/* 1. 地図レイヤー（一番下） */
 #map {
     position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     z-index: 1;
 }
 
-/* 2. 放送ヘッダー（絶対配置で最前面） */
+/* 放送ヘッダーの固定レイアウト */
 #broadcast-header {
     position: absolute;
-    top: 20px; left: 20px; right: 20px;
+    top: 0;
+    left: 0;
+    width: 100%;
     height: 120px;
+    background: rgba(0, 0, 0, 0.85);
     z-index: 1000;
     display: flex;
     align-items: center;
-    gap: 20px;
-    background: rgba(0,0,0,0.5); /* 視認性向上のための薄い黒背景 */
+    padding: 0 40px;
+    box-sizing: border-box;
+    gap: 30px;
 }
 
-/* 3. 【最重要】画像サイズ制御 */
+/* 画像が巨大化しないための最重要設定 */
 #broadcast-header img {
-    height: 100%;       /* 親要素(120px)に合わせる */
-    width: auto;        /* 比率維持 */
-    object-fit: contain; /* 歪まないように枠に収める */
-    display: block;
+    height: 80px;         /* 高さを固定 */
+    width: auto;          /* 比率を維持 */
+    object-fit: contain;  /* 歪みを防ぐ */
 }
 
-/* 各エリア */
-#header-left { height: 100%; display: flex; align-items: center; }
-#header-center { height: 80%; display: flex; align-items: center; gap: 10px; }
-#header-right { height: 80%; display: flex; align-items: center; gap: 10px; }
+#info-text {
+    color: white;
+    font-size: 32px;
+    font-family: sans-serif;
+}
