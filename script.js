@@ -9,7 +9,7 @@ async function fetchEarthquakeData() {
         const response = await fetch('https://api.p2pquake.net/v2/history?codes=551&limit=1');
         const data = await response.json();
         if (data.length > 0) renderUI(data[0]);
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("データ取得エラー:", e); }
 }
 
 // --- 地図データ読み込み ---
@@ -27,36 +27,50 @@ async function loadMapData() {
 // --- 震度色定義 ---
 function getShindoColor(scale) {
     const colors = {
-        0: '#ffffff', // 震度0/不明
-        10: '#b0e0e6', // 1
-        20: '#87ceeb', // 2
-        30: '#ffff00', // 3
-        40: '#ffa500', // 4
-        45: '#ff4500', // 5弱
-        50: '#ff0000', // 5強
-        55: '#b22222', // 6弱
-        60: '#8b0000', // 6強
-        70: '#800080'  // 7
+        0: '#ffffff', 10: '#b0e0e6', 20: '#87ceeb', 30: '#ffff00', 
+        40: '#ffa500', 45: '#ff4500', 50: '#ff0000', 55: '#b22222', 
+        60: '#8b0000', 70: '#800080'
     };
     return colors[scale] || '#cccccc';
 }
 
-// --- 震度マップ更新 ---
-function updateMap(areas) {
+// --- 震度マップ更新（外部mapping.jsを利用） ---
+function updateMap(points) {
     if (mapLayer) map.removeLayer(mapLayer);
+    const geojson = topojson.feature(saibunData, saibunData.objects.saibun);
 
-    const geojson = topojson.feature(saibunData, saibunData.objects.saibun); // ※オブジェクト名は実際のJSONに合わせてください
+    const regionMaxScales = {};
+
+    points.forEach(p => {
+        // mapping.jsで定義した AREA_MAPPING を利用
+        const prefCities = typeof AREA_MAPPING !== 'undefined' ? AREA_MAPPING[p.pref] : null;
+        
+        if (prefCities) {
+            // その都道府県内の市区町村を走査
+            for (const cityName in prefCities) {
+                // 部分一致判定
+                if (p.addr.startsWith(cityName)) {
+                    const regionName = prefCities[cityName];
+                    const currentMax = regionMaxScales[regionName] || 0;
+                    if (p.scale > currentMax) {
+                        regionMaxScales[regionName] = p.scale;
+                    }
+                    break;
+                }
+            }
+        }
+    });
 
     mapLayer = L.geoJSON(geojson, {
         style: (feature) => {
-            const areaName = feature.properties.name; // JSON側の地域名プロパティ
-            const areaData = areas.find(a => a.name === areaName);
+            const mapName = feature.properties.name;
+            const maxScale = regionMaxScales[mapName] || 0;
             return {
-                fillColor: areaData ? getShindoColor(areaData.scale) : '#ffffff',
+                fillColor: maxScale > 0 ? getShindoColor(maxScale) : '#ffffff',
                 weight: 0.5,
                 opacity: 1,
                 color: '#333',
-                fillOpacity: 0.7
+                fillOpacity: maxScale > 0 ? 0.7 : 0.3
             };
         }
     }).addTo(map);
@@ -70,7 +84,7 @@ function formatDate(timeStr) {
     return `${parseInt(dateParts[2])}<span class="unit">日</span> ${parseInt(timeParts[0])}<span class="unit">時</span> ${timeParts[1]}<span class="unit">分ごろ</span>`;
 }
 
-// --- ヘルパー関数 ---
+// --- バナー操作系 ---
 function createBannerImg(filename) {
     const img = document.createElement('img');
     img.src = `assets/banner/${filename}.png`;
@@ -106,7 +120,6 @@ function renderUI(eq) {
     document.getElementById('hypo-val').innerText = eq.earthquake.hypocenter.name;
     document.getElementById('depth-val').innerText = `${eq.earthquake.hypocenter.depth}km`;
 
-    // 震度画像
     const scaleContainer = document.getElementById('max-scale-container');
     scaleContainer.innerHTML = '';
     const scaleMap = { 10: '1', 20: '2', 30: '3', 40: '4', 45: '5m', 50: '5p', 55: '6m', 60: '6p', 70: '7' };
@@ -118,7 +131,6 @@ function renderUI(eq) {
         scaleContainer.appendChild(createBannerImg((eq.earthquake.maxScale && scaleMap[eq.earthquake.maxScale]) ? scaleMap[eq.earthquake.maxScale] : '0'));
     }
 
-    // 津波バナー
     const infoContainer = document.getElementById('info-banner-container');
     const existingTsunami = document.getElementById('tsunami-banner');
     if (existingTsunami) existingTsunami.remove();
@@ -126,15 +138,12 @@ function renderUI(eq) {
     const tsunamiMap = { 'None': 'tm_n', 'Watch': 'tm_j', 'Advisory': 'tm_i', 'Warning': 'tm_i', 'Alarm': 'tm_i' };
     infoContainer.prepend(createTsunamiImg(tsunamiMap[eq.earthquake.domesticTsunami] || 'tm_n'));
 
-    // EEW/遠地地震
     eewImg.classList.toggle('active', eq.earthquake.eew);
     farImg.classList.toggle('active', eq.earthquake.hypocenter.name.includes('海外'));
 
-    // 震度マップ描画
-    if (eq.earthquake.areas) updateMap(eq.earthquake.areas);
+    if (eq.points) updateMap(eq.points);
 }
 
-// --- 初期化 ---
 function initMap() {
     map = L.map('map', { zoomControl: false, attributionControl: false, dragging: false, zoom: false }).setView([36.0, 138.0], 5);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
@@ -142,7 +151,7 @@ function initMap() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     initMap();
-    await loadMapData(); // 地図データを待ってから初期化
+    await loadMapData();
     initBanners();
     fetchEarthquakeData();
     setInterval(fetchEarthquakeData, 30000);
