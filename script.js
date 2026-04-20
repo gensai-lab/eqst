@@ -101,3 +101,36 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchEarthquakeData();
     setInterval(fetchEarthquakeData, 30000);
 });
+
+// 【テスト用】様々なパターンを呼び出せる関数
+window.testDisplay = (scenario) => {
+    let testData = {
+        earthquake: {
+            time: "2026/04/20 12:00:00",
+            hypocenter: { name: "テスト震源", magnitude: 7.0, depth: 10 },
+            maxScale: 30,
+            longPeriodIntensity: 0,
+            domesticTsunami: 'None', // 初期値
+            eew: false,             // 初期値
+        }
+    };
+
+    if (scenario === 'full') {
+        // 全てを表示（津波警報 + EEW + 遠地地震）
+        testData.earthquake.domesticTsunami = 'Warning';
+        testData.earthquake.eew = true;
+        testData.earthquake.hypocenter.name = '海外（テスト震源）';
+    } else if (scenario === 'tsunami') {
+        // 津波警報のみ
+        testData.earthquake.domesticTsunami = 'Warning';
+    } else if (scenario === 'eew') {
+        // EEWのみ
+        testData.earthquake.eew = true;
+    } else if (scenario === 'far') {
+        // 遠地地震のみ
+        testData.earthquake.hypocenter.name = '海外（テスト震源）';
+    }
+
+    renderUI(testData);
+    console.log(`テストシナリオ「${scenario}」を適用しました。`);
+};
