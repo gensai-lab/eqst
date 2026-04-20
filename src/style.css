@@ -1,13 +1,52 @@
-body { margin: 0; padding: 0; width: 1920px; height: 1080px; overflow: hidden; }
+/* style.css */
 
-#map { width: 100%; height: 100%; }
-
-#header-banner {
-    position: absolute;
-    top: 20px; left: 20px;
-    z-index: 1000;
-    display: flex;
-    gap: 10px;
+/* 1. 画面全体の基準設定 */
+body {
+    margin: 0;
+    padding: 0;
+    /* Kactuif v2 の解像度を 1920x1080 に固定 */
+    width: 1920px;
+    height: 1080px;
+    /* 画面からはみ出した要素は隠す（スクロールバーを出さない） */
+    overflow: hidden;
+    /* 背景色（海の色として適当な青） */
+    background-color: #1a337a; 
+    /* 配置の基準にする */
+    position: relative;
 }
 
-/* 長周期地震動がある場合は flex-direction: column に変更するロジックをJSで入れる */
+/* 2. 地図の配置（画面全体） */
+#map {
+    width: 100%;
+    height: 100%;
+    z-index: 1; /* 一番下に配置 */
+}
+
+/* 3. ヘッダーバナーのコンテナ（image_1.png の配置） */
+#header-banner {
+    position: absolute;
+    /* 画面の左上から少し離して配置 */
+    top: 20px; 
+    left: 20px;
+    /* 地図よりも上に表示する */
+    z-index: 1000; 
+
+    /* JavaScriptで中身が動的に変わっても綺麗に並べるためのFlexbox設定 */
+    display: flex;
+    /* 画像を左寄せにする */
+    justify-content: flex-start; 
+    /* 上下の配置を中央に揃える */
+    align-items: center; 
+    /* 画像間の隙間 */
+    gap: 10px; 
+}
+
+/* 4. コンテナ内の画像のスタイル設定 */
+#header-banner img {
+    /* 画像の高さを固定（デザインに合わせて適宜調整してください） */
+    height: 120px; 
+    /* 横幅は自動（アスペクト比を維持） */
+    width: auto; 
+    /* 画像の下の不要な隙間を消す */
+    display: block; 
+}
