@@ -19,31 +19,46 @@ function formatDate(timeStr) {
     return `${day}<span class="unit">日</span><span class="space"> </span>${hour}<span class="unit">時</span><span class="space"> </span>${min}<span class="unit">分ごろ</span>`;
 }
 
-// 震度コードを文字に変換する関数
-function getScaleText(s) {
-    switch(s) {
-        case 10: return '1';
-        case 20: return '2';
-        case 30: return '3';
-        case 40: return '4';
-        case 45: return '5<span class="unit">弱</span>';
-        case 50: return '5<span class="unit">強</span>';
-        case 55: return '6<span class="unit">弱</span>';
-        case 60: return '6<span class="unit">強</span>';
-        case 70: return '7';
-        default: return '-';
-    }
+// 画像生成ヘルパー
+function createImg(filename) {
+    const img = document.createElement('img');
+    img.src = `assets/banner/${filename}.png`;
+    return img;
 }
 
 function renderUI(eq) {
-    // データ反映
+    // 既存テキスト反映
     document.getElementById('time-val').innerHTML = formatDate(eq.earthquake.time);
     document.getElementById('mag-val').innerText = `M${eq.earthquake.hypocenter.magnitude.toFixed(1)}`;
     document.getElementById('hypo-val').innerText = eq.earthquake.hypocenter.name;
     document.getElementById('depth-val').innerText = `${eq.earthquake.hypocenter.depth}km`;
+
+    // ▼ 画像表示ロジック
+    const container = document.getElementById('max-scale-container');
+    container.innerHTML = ''; // 一度クリア
+
+    const scaleMap = { 
+        10: '1', 20: '2', 30: '3', 40: '4', 
+        45: '5m', 50: '5p', 55: '6m', 60: '6p', 70: '7' 
+    };
     
-    // 最大震度反映（HTML形式で反映）
-    document.getElementById('max-scale-val').innerHTML = getScaleText(eq.earthquake.maxScale);
+    const maxScale = eq.earthquake.maxScale; // 震度コード
+    const lpIntensity = eq.earthquake.longPeriodIntensity; // 長周期コード (1~4)
+
+    // ロジック分岐
+    if (lpIntensity && lpIntensity > 0) {
+        // --- 長周期が観測されている場合 ---
+        const sName = (maxScale && scaleMap[maxScale]) ? `cj_s${scaleMap[maxScale]}` : 'cj_s0';
+        const cName = `cj_c${lpIntensity}`;
+        
+        container.appendChild(createImg(sName)); // 上段
+        container.appendChild(createImg(cName)); // 下段
+    } else {
+        // --- 長周期が観測されていない場合 ---
+        const sName = (maxScale && scaleMap[maxScale]) ? scaleMap[maxScale] : '0';
+        
+        container.appendChild(createImg(sName)); // 震度画像のみ
+    }
 }
 
 function initMap() {
