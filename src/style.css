@@ -1,0 +1,13 @@
+body { margin: 0; padding: 0; width: 1920px; height: 1080px; overflow: hidden; }
+
+#map { width: 100%; height: 100%; }
+
+#header-banner {
+    position: absolute;
+    top: 20px; left: 20px;
+    z-index: 1000;
+    display: flex;
+    gap: 10px;
+}
+
+/* 長周期地震動がある場合は flex-direction: column に変更するロジックをJSで入れる */
