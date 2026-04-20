@@ -76,12 +76,12 @@ html, body {
     z-index: 1001;
     display: flex;
     flex-direction: column; /* 縦に並べる */
-    gap: 5px;               /* 画像間の隙間 */
+    gap: 0px;               /* 画像間の隙間 */
     align-items: center;    /* 中央揃え */
 }
 
 #max-scale-container img {
     height: auto;
     width: 100%; 
-    max-width: 470px; /* 画像サイズ調整用 */
+    max-width: 471px; /* 画像サイズ調整用 */
 }
