@@ -109,5 +109,13 @@ html, body {
     height: auto;
     width: auto;
     max-width: 155px;
-    display: none;
+    
+    /* 変更点：常に表示し、不透明度を0.1にする */
+    opacity: 0.1; 
+    transition: opacity 0.5s ease; /* ふわっと切り替わる演出 */
+}
+
+/* 変更点：データがある時は不透明度を1にする */
+.banner-item.active {
+    opacity: 1;
 }
