@@ -84,7 +84,7 @@ html, body {
 
 #info-banner-container {
     position: absolute;
-    top: 20px;
+    top: 16px;
     right: 20px;
     z-index: 1001;
     display: flex;
@@ -96,7 +96,7 @@ html, body {
 #tsunami-banner {
     height: auto;
     width: auto;
-    max-width: 300px;
+    max-width: 320px;
 }
 
 #eew-far-container {
@@ -108,6 +108,6 @@ html, body {
 .banner-item {
     height: auto;
     width: auto;
-    max-width: 150px;
+    max-width: 155px;
     display: none;
 }
