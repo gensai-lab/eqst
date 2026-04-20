@@ -1,6 +1,6 @@
 // --- グローバル変数 ---
 let eewImg, farImg;
-let saibunData, prefData;
+let saibunData;
 let map, mapLayer;
 
 // --- APIデータ取得 ---
@@ -15,12 +15,8 @@ async function fetchEarthquakeData() {
 // --- 地図データ読み込み ---
 async function loadMapData() {
     try {
-        const [saibunRes, prefRes] = await Promise.all([
-            fetch('assets/json/saibun.json'),
-            fetch('assets/json/todoufuken.json')
-        ]);
-        saibunData = await saibunRes.json();
-        prefData = await prefRes.json();
+        const res = await fetch('assets/json/saibun.json');
+        saibunData = await res.json();
     } catch (e) { console.error("地図データの読み込みに失敗しました:", e); }
 }
 
@@ -34,7 +30,7 @@ function getShindoColor(scale) {
     return colors[scale] || '#cccccc';
 }
 
-// --- 震度マップ更新（外部mapping.jsを利用） ---
+// --- 震度マップ更新 ---
 function updateMap(points) {
     if (mapLayer) map.removeLayer(mapLayer);
     const geojson = topojson.feature(saibunData, saibunData.objects.saibun);
@@ -42,21 +38,27 @@ function updateMap(points) {
     const regionMaxScales = {};
 
     points.forEach(p => {
-        // mapping.jsで定義した AREA_MAPPING を利用
         const prefCities = typeof AREA_MAPPING !== 'undefined' ? AREA_MAPPING[p.pref] : null;
         
         if (prefCities) {
-            // その都道府県内の市区町村を走査
+            let found = false;
             for (const cityName in prefCities) {
-                // 部分一致判定
-                if (p.addr.startsWith(cityName)) {
+                // ここで「完全一致」または「前方一致」を判定
+                // APIが「札幌市中央区」、mappingが「札幌中央区」だとダメなので
+                // 基本的にはmapping.jsのキーをAPIと完全に合わせるのが正解です
+                if (p.addr.startsWith(cityName) || cityName.startsWith(p.addr)) {
                     const regionName = prefCities[cityName];
                     const currentMax = regionMaxScales[regionName] || 0;
                     if (p.scale > currentMax) {
                         regionMaxScales[regionName] = p.scale;
                     }
+                    found = true;
                     break;
                 }
+            }
+            if (!found) {
+                // ここでコンソールに不一致の市町村が出るので確認してください！
+                console.log(`[マッチしないデータ] ${p.pref}の「${p.addr}」がmapping.jsにありません`);
             }
         }
     });
