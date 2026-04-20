@@ -1,7 +1,5 @@
-// --- グローバル変数 ---
-let eewImg, farImg;
-let saibunData;
-let map, mapLayer;
+let saibunData, prefData;
+let map, saibunLayer, prefLayer;
 
 // --- APIデータ取得 ---
 async function fetchEarthquakeData() {
@@ -15,146 +13,90 @@ async function fetchEarthquakeData() {
 // --- 地図データ読み込み ---
 async function loadMapData() {
     try {
-        const res = await fetch('assets/json/saibun.json');
-        saibunData = await res.json();
-    } catch (e) { console.error("地図データの読み込みに失敗しました:", e); }
+        const [saibunRes, prefRes] = await Promise.all([
+            fetch('assets/json/saibun.json'),
+            fetch('assets/json/todoufuken.json')
+        ]);
+        saibunData = await saibunRes.json();
+        prefData = await prefRes.json();
+        drawMap();
+    } catch (e) { console.error("データ読み込みエラー:", e); }
+}
+
+// --- 地図描画 ---
+function drawMap() {
+    // 県境レイヤー（下に配置）
+    prefLayer = L.geoJSON(topojson.feature(prefData, prefData.objects.todoufuken), {
+        style: { color: '#7F7F7F', weight: 1.5, fill: false, opacity: 1 }
+    }).addTo(map);
+
+    // 細分区域レイヤー（上に配置、塗り色指定）
+    saibunLayer = L.geoJSON(topojson.feature(saibunData, saibunData.objects.saibun), {
+        style: { fillColor: '#BFBFBF', color: '#A6A6A6', weight: 0.5, fillOpacity: 1 }
+    }).addTo(map);
 }
 
 // --- 震度色定義 ---
 function getShindoColor(scale) {
     const colors = {
-        0: '#ffffff', 10: '#b0e0e6', 20: '#87ceeb', 30: '#ffff00', 
+        0: '#BFBFBF', 10: '#b0e0e6', 20: '#87ceeb', 30: '#ffff00', 
         40: '#ffa500', 45: '#ff4500', 50: '#ff0000', 55: '#b22222', 
         60: '#8b0000', 70: '#800080'
     };
-    return colors[scale] || '#cccccc';
+    return colors[scale] || '#BFBFBF';
 }
 
-// --- 震度マップ更新 ---
+// --- 震度更新ロジック ---
 function updateMap(points) {
-    if (mapLayer) map.removeLayer(mapLayer);
-    const geojson = topojson.feature(saibunData, saibunData.objects.saibun);
+    saibunLayer.setStyle((feature) => {
+        const regionName = feature.properties.name;
+        let maxScale = 0;
 
-    const regionMaxScales = {};
-
-    points.forEach(p => {
-        const prefCities = typeof AREA_MAPPING !== 'undefined' ? AREA_MAPPING[p.pref] : null;
-        
-        if (prefCities) {
-            let found = false;
-            for (const cityName in prefCities) {
-                // ここで「完全一致」または「前方一致」を判定
-                // APIが「札幌市中央区」、mappingが「札幌中央区」だとダメなので
-                // 基本的にはmapping.jsのキーをAPIと完全に合わせるのが正解です
-                if (p.addr.startsWith(cityName) || cityName.startsWith(p.addr)) {
-                    const regionName = prefCities[cityName];
-                    const currentMax = regionMaxScales[regionName] || 0;
-                    if (p.scale > currentMax) {
-                        regionMaxScales[regionName] = p.scale;
+        points.forEach(p => {
+            const prefCities = typeof AREA_MAPPING !== 'undefined' ? AREA_MAPPING[p.pref] : null;
+            if (prefCities) {
+                for (const cityName in prefCities) {
+                    if (p.addr.startsWith(cityName) && prefCities[cityName] === regionName) {
+                        if (p.scale > maxScale) maxScale = p.scale;
                     }
-                    found = true;
-                    break;
                 }
             }
-            if (!found) {
-                // ここでコンソールに不一致の市町村が出るので確認してください！
-                console.log(`[マッチしないデータ] ${p.pref}の「${p.addr}」がmapping.jsにありません`);
-            }
-        }
+        });
+
+        return {
+            fillColor: maxScale > 0 ? getShindoColor(maxScale) : '#BFBFBF',
+            color: '#A6A6A6',
+            weight: 0.5,
+            fillOpacity: 1
+        };
     });
-
-    mapLayer = L.geoJSON(geojson, {
-        style: (feature) => {
-            const mapName = feature.properties.name;
-            const maxScale = regionMaxScales[mapName] || 0;
-            return {
-                fillColor: maxScale > 0 ? getShindoColor(maxScale) : '#ffffff',
-                weight: 0.5,
-                opacity: 1,
-                color: '#333',
-                fillOpacity: maxScale > 0 ? 0.7 : 0.3
-            };
-        }
-    }).addTo(map);
 }
 
-// --- 日付フォーマット ---
-function formatDate(timeStr) {
-    const parts = timeStr.split(' '); 
-    const dateParts = parts[0].split('/'); 
-    const timeParts = parts[1].split(':'); 
-    return `${parseInt(dateParts[2])}<span class="unit">日</span> ${parseInt(timeParts[0])}<span class="unit">時</span> ${timeParts[1]}<span class="unit">分ごろ</span>`;
-}
-
-// --- バナー操作系 ---
-function createBannerImg(filename) {
-    const img = document.createElement('img');
-    img.src = `assets/banner/${filename}.png`;
-    return img;
-}
-
-function createTsunamiImg(filename) {
-    const img = document.createElement('img');
-    img.src = `assets/banner/${filename}.png`;
-    img.id = 'tsunami-banner';
-    return img;
-}
-
-function initBanners() {
-    const infoContainer = document.getElementById('info-banner-container');
-    const eewFarContainer = document.createElement('div');
-    eewFarContainer.id = 'eew-far-container';
-    infoContainer.appendChild(eewFarContainer);
-    
-    eewImg = createBannerImg('eew');
-    eewImg.classList.add('banner-item');
-    eewFarContainer.appendChild(eewImg);
-    
-    farImg = createBannerImg('enchi');
-    farImg.classList.add('banner-item');
-    eewFarContainer.appendChild(farImg);
-}
-
-// --- UI更新処理 ---
+// --- UI更新 ---
 function renderUI(eq) {
-    document.getElementById('time-val').innerHTML = formatDate(eq.earthquake.time);
+    document.getElementById('time-val').innerText = eq.earthquake.time;
     document.getElementById('mag-val').innerText = `M${eq.earthquake.hypocenter.magnitude.toFixed(1)}`;
     document.getElementById('hypo-val').innerText = eq.earthquake.hypocenter.name;
     document.getElementById('depth-val').innerText = `${eq.earthquake.hypocenter.depth}km`;
 
     const scaleContainer = document.getElementById('max-scale-container');
     scaleContainer.innerHTML = '';
+    
+    // 震度アイコンの読み込みパス設定
     const scaleMap = { 10: '1', 20: '2', 30: '3', 40: '4', 45: '5m', 50: '5p', 55: '6m', 60: '6p', 70: '7' };
-    
-    if (eq.earthquake.longPeriodIntensity && eq.earthquake.longPeriodIntensity > 0) {
-        scaleContainer.appendChild(createBannerImg((eq.earthquake.maxScale && scaleMap[eq.earthquake.maxScale]) ? `cj_s${scaleMap[eq.earthquake.maxScale]}` : 'cj_s0'));
-        scaleContainer.appendChild(createBannerImg(`cj_c${eq.earthquake.longPeriodIntensity}`));
-    } else {
-        scaleContainer.appendChild(createBannerImg((eq.earthquake.maxScale && scaleMap[eq.earthquake.maxScale]) ? scaleMap[eq.earthquake.maxScale] : '0'));
+    if (eq.earthquake.maxScale) {
+        const img = document.createElement('img');
+        img.src = `assets/icons/${scaleMap[eq.earthquake.maxScale] || '0'}.png`;
+        scaleContainer.appendChild(img);
     }
-
-    const infoContainer = document.getElementById('info-banner-container');
-    const existingTsunami = document.getElementById('tsunami-banner');
-    if (existingTsunami) existingTsunami.remove();
-    
-    const tsunamiMap = { 'None': 'tm_n', 'Watch': 'tm_j', 'Advisory': 'tm_i', 'Warning': 'tm_i', 'Alarm': 'tm_i' };
-    infoContainer.prepend(createTsunamiImg(tsunamiMap[eq.earthquake.domesticTsunami] || 'tm_n'));
-
-    eewImg.classList.toggle('active', eq.earthquake.eew);
-    farImg.classList.toggle('active', eq.earthquake.hypocenter.name.includes('海外'));
 
     if (eq.points) updateMap(eq.points);
 }
 
-function initMap() {
+// --- 初期化 ---
+document.addEventListener('DOMContentLoaded', () => {
     map = L.map('map', { zoomControl: false, attributionControl: false, dragging: false, zoom: false }).setView([36.0, 138.0], 5);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
-    initMap();
-    await loadMapData();
-    initBanners();
+    loadMapData();
     fetchEarthquakeData();
     setInterval(fetchEarthquakeData, 30000);
 });
