@@ -25,28 +25,22 @@ body {
 /* 3. ヘッダーバナーのコンテナ（image_1.png の配置） */
 #header-banner {
     position: absolute;
-    /* 画面の左上から少し離して配置 */
     top: 20px; 
     left: 20px;
-    /* 地図よりも上に表示する */
     z-index: 1000; 
-
-    /* JavaScriptで中身が動的に変わっても綺麗に並べるためのFlexbox設定 */
     display: flex;
-    /* 画像を左寄せにする */
-    justify-content: flex-start; 
-    /* 上下の配置を中央に揃える */
-    align-items: center; 
-    /* 画像間の隙間 */
+    flex-direction: column; /* 長周期地震動時は縦並びにするため */
     gap: 10px; 
+    
+    /* コンテナが画像によって勝手に横に伸びないようにする */
+    max-width: 500px; 
 }
 
-/* 4. コンテナ内の画像のスタイル設定 */
 #header-banner img {
-    /* 画像の高さを固定（デザインに合わせて適宜調整してください） */
-    height: 120px; 
-    /* 横幅は自動（アスペクト比を維持） */
-    width: auto; 
-    /* 画像の下の不要な隙間を消す */
-    display: block; 
-}
+    /* サイズを強制的に指定 */
+    height: 80px;      /* 高さを指定（お好みで調整してください） */
+    width: auto;       /* 横幅は自動調整（アスペクト比維持） */
+    object-fit: contain; /* 画像が歪まないようにする */
+    
+    /* 左寄せにする */
+    display: block;
