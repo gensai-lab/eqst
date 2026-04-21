@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <title>Map Viewer</title>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background-color: #0d1a3a; }
         #map-container { width: 100vw; height: 100vh; }
@@ -15,20 +16,23 @@
     <svg id="map-container"></svg>
 
     <script>
-        // 地図の基本設定（この部分は残します）
+        // --- 基本地図の描画ロジック ---
         const svg = d3.select("#map-container");
         const projection = d3.geoMercator().center([137, 36]).scale(2000).translate([window.innerWidth/2, window.innerHeight/2]);
         const path = d3.geoPath().projection(projection);
 
-        // 基本地図の描画
-        Promise.all([
+        // 地図ファイルの読み込みと描画
+        const mapReady = Promise.all([
             d3.json("assets/json/todoufuken.json"),
             d3.json("assets/json/saibun.json")
         ]).then(([prefData, saibunData]) => {
             const prefKey = Object.keys(prefData.objects)[0];
             const saibunKey = Object.keys(saibunData.objects)[0];
+
             svg.append("g").selectAll("path").data(topojson.feature(prefData, prefData.objects[prefKey]).features).enter().append("path").attr("d", path).attr("class", "pref-layer");
             svg.append("g").selectAll("path").data(topojson.feature(saibunData, saibunData.objects[saibunKey]).features).enter().append("path").attr("d", path).attr("class", "saibun-layer");
+            
+            console.log("地図の基本描画が完了しました。");
         });
     </script>
 
