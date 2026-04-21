@@ -15,50 +15,36 @@ function sendToMap(data) {
 
 function formatDate(timeStr) {
     const [datePart, timePart] = timeStr.split(' ');
-    const [year, month, day] = datePart.split('/');
-    const [hour, min, sec] = timePart.split(':');
+    const [day] = datePart.split('/').slice(-1);
+    const [hour, min] = timePart.split(':');
     return `${parseInt(day)}<span class="unit">日 </span>${parseInt(hour)}<span class="unit">時 </span>${parseInt(min)}<span class="unit">分ごろ</span>`;
 }
 
 function renderUI(eq) {
     const e = eq.earthquake;
-    
-    // UI更新（要素がある場合のみ更新する安全策）
-    const timeVal = document.getElementById('time-val');
-    if(timeVal) timeVal.innerHTML = formatDate(e.time);
-    
-    const magVal = document.getElementById('mag-val');
-    if(magVal) magVal.innerText = `M${e.hypocenter.magnitude.toFixed(1)}`;
-    
-    const hypoVal = document.getElementById('hypo-val');
-    if(hypoVal) hypoVal.innerText = e.hypocenter.name;
-    
-    const depthVal = document.getElementById('depth-val');
-    if(depthVal) depthVal.innerText = `${e.hypocenter.depth}km`;
+    document.getElementById('time-val').innerHTML = formatDate(e.time);
+    document.getElementById('mag-val').innerText = `M${e.hypocenter.magnitude.toFixed(1)}`;
+    document.getElementById('hypo-val').innerText = e.hypocenter.name;
+    document.getElementById('depth-val').innerText = `${e.hypocenter.depth}km`;
 
-    // 震度バナー
+    // 震度アイコン
     const scaleContainer = document.getElementById('max-scale-container');
-    if(scaleContainer) {
-        scaleContainer.innerHTML = '';
-        const scaleMap = { 10: '1', 20: '2', 30: '3', 40: '4', 45: '5m', 50: '5p', 55: '6m', 60: '6p', 70: '7' };
-        if (e.maxScale && scaleMap[e.maxScale]) {
-            const img = document.createElement('img');
-            img.src = `assets/banner/${scaleMap[e.maxScale]}.png`;
-            scaleContainer.appendChild(img);
-        }
+    scaleContainer.innerHTML = '';
+    const scaleMap = { 10: '1', 20: '2', 30: '3', 40: '4', 45: '5m', 50: '5p', 55: '6m', 60: '6p', 70: '7' };
+    if (e.maxScale && scaleMap[e.maxScale]) {
+        const img = document.createElement('img');
+        img.src = `assets/banner/${scaleMap[e.maxScale]}.png`;
+        scaleContainer.appendChild(img);
     }
 
-    // 状況バナーの更新
-    const tsunami = document.getElementById('status-tsunami');
-    if(tsunami) tsunami.classList.toggle('active', e.domesticTsunami === 'None');
+    // ステータスバナー更新
+    document.getElementById('status-tsunami-n').classList.toggle('active', e.domesticTsunami === 'None');
+    document.getElementById('status-tsunami-j').classList.toggle('active', e.domesticTsunami === 'Checking'); // 例: 情報なし/調査中などをここに
+    document.getElementById('status-tsunami-i').classList.toggle('active', e.domesticTsunami === 'Warning' || e.domesticTsunami === 'Advisory');
     
-    const eew = document.getElementById('status-eew');
-    if(eew) eew.classList.toggle('active', eq.isEew === true);
-    
-    const enchi = document.getElementById('status-enchi');
-    if(enchi) enchi.classList.toggle('active', e.hypocenter.name.includes('海外'));
+    document.getElementById('status-eew').classList.toggle('active', eq.isEew === true);
+    document.getElementById('status-enchi').classList.toggle('active', e.hypocenter.name.includes('海外'));
 
-    // 地図へ送信
     sendToMap(eq);
 }
 
