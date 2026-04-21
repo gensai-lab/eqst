@@ -63,8 +63,8 @@ html, body {
 /* 位置を％で厳密に指定 */
 #time-val { top: -0.2%; left: 35%; }
 #mag-val  { top: -0.2%; left: 66.5%; }
-#hypo-val { top: 5.6%; left: 35%; }
-#depth-val { top: 5.6%; left: 66.5%; }
+#hypo-val { top: 5.8%; left: 35%; }
+#depth-val { top: 5.8%; left: 66.5%; }
 
 #max-scale-container {
     position: absolute;
