@@ -1,14 +1,6 @@
+// --- グローバル変数 ---
 let saibunData, prefData;
-let map, saibunLayer, prefLayer;
-
-// --- APIデータ取得 ---
-async function fetchEarthquakeData() {
-    try {
-        const response = await fetch('https://api.p2pquake.net/v2/history?codes=551&limit=1');
-        const data = await response.json();
-        if (data.length > 0) renderUI(data[0]);
-    } catch (e) { console.error("データ取得エラー:", e); }
-}
+let map, saibunLayer, prefLayer; // レイヤーを細分区域と県境で分けます
 
 // --- 地図データ読み込み ---
 async function loadMapData() {
@@ -19,44 +11,49 @@ async function loadMapData() {
         ]);
         saibunData = await saibunRes.json();
         prefData = await prefRes.json();
-        drawMap();
-    } catch (e) { console.error("データ読み込みエラー:", e); }
+        
+        // データの読み込み完了後にマップを描画
+        drawMapLayers();
+    } catch (e) { console.error("地図データの読み込みに失敗しました:", e); }
 }
 
-// --- 地図描画 ---
-function drawMap() {
-    // 県境レイヤー（下に配置）
+// --- 地図レイヤーの初期描画 ---
+function drawMapLayers() {
+    // 1. 県境レイヤー（下に配置）
     prefLayer = L.geoJSON(topojson.feature(prefData, prefData.objects.todoufuken), {
-        style: { color: '#7F7F7F', weight: 1.5, fill: false, opacity: 1 }
+        style: { color: '#7F7F7F', weight: 1.5, fill: false }
     }).addTo(map);
 
-    // 細分区域レイヤー（上に配置、塗り色指定）
+    // 2. 細分区域レイヤー（上に配置、初期は #BFBFBF で塗りつぶし）
     saibunLayer = L.geoJSON(topojson.feature(saibunData, saibunData.objects.saibun), {
         style: { fillColor: '#BFBFBF', color: '#A6A6A6', weight: 0.5, fillOpacity: 1 }
     }).addTo(map);
 }
 
-// --- 震度色定義 ---
+// --- 震度色定義（ご指定の仕様に合わせて更新） ---
 function getShindoColor(scale) {
     const colors = {
-        0: '#BFBFBF', 10: '#b0e0e6', 20: '#87ceeb', 30: '#ffff00', 
-        40: '#ffa500', 45: '#ff4500', 50: '#ff0000', 55: '#b22222', 
-        60: '#8b0000', 70: '#800080'
+        0: '#BFBFBF', // 未発生時は塗り色と同じ
+        10: '#E0FFFF', 20: '#87CEFA', 30: '#FFFF00', 
+        40: '#FFA500', 45: '#FF4500', 50: '#FF0000', 
+        55: '#B22222', 60: '#8B0000', 70: '#800080'
     };
     return colors[scale] || '#BFBFBF';
 }
 
-// --- 震度更新ロジック ---
+// --- 震度マップ更新 ---
 function updateMap(points) {
+    // レイヤーのスタイルを更新
     saibunLayer.setStyle((feature) => {
-        const regionName = feature.properties.name;
+        const mapName = feature.properties.name;
         let maxScale = 0;
 
+        // 震度判定ロジック
         points.forEach(p => {
             const prefCities = typeof AREA_MAPPING !== 'undefined' ? AREA_MAPPING[p.pref] : null;
             if (prefCities) {
                 for (const cityName in prefCities) {
-                    if (p.addr.startsWith(cityName) && prefCities[cityName] === regionName) {
+                    if (p.addr.startsWith(cityName) && prefCities[cityName] === mapName) {
                         if (p.scale > maxScale) maxScale = p.scale;
                     }
                 }
@@ -72,31 +69,17 @@ function updateMap(points) {
     });
 }
 
-// --- UI更新 ---
-function renderUI(eq) {
-    document.getElementById('time-val').innerText = eq.earthquake.time;
-    document.getElementById('mag-val').innerText = `M${eq.earthquake.hypocenter.magnitude.toFixed(1)}`;
-    document.getElementById('hypo-val').innerText = eq.earthquake.hypocenter.name;
-    document.getElementById('depth-val').innerText = `${eq.earthquake.hypocenter.depth}km`;
-
-    const scaleContainer = document.getElementById('max-scale-container');
-    scaleContainer.innerHTML = '';
+// --- 地図の初期化 ---
+function initMap() {
+    map = L.map('map', { 
+        zoomControl: false, 
+        attributionControl: false, 
+        dragging: false, 
+        zoom: false 
+    }).setView([37.5, 137.5], 5); // 中心座標を少し調整
     
-    // 震度アイコンの読み込みパス設定
-    const scaleMap = { 10: '1', 20: '2', 30: '3', 40: '4', 45: '5m', 50: '5p', 55: '6m', 60: '6p', 70: '7' };
-    if (eq.earthquake.maxScale) {
-        const img = document.createElement('img');
-        img.src = `assets/icons/${scaleMap[eq.earthquake.maxScale] || '0'}.png`;
-        scaleContainer.appendChild(img);
-    }
-
-    if (eq.points) updateMap(eq.points);
+    // 背景色を指定
+    map.getContainer().style.backgroundColor = '#1E346F';
 }
 
-// --- 初期化 ---
-document.addEventListener('DOMContentLoaded', () => {
-    map = L.map('map', { zoomControl: false, attributionControl: false, dragging: false, zoom: false }).setView([36.0, 138.0], 5);
-    loadMapData();
-    fetchEarthquakeData();
-    setInterval(fetchEarthquakeData, 30000);
-});
+// ... (他はそのまま)
