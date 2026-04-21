@@ -3,13 +3,9 @@
     src: url('assets/UDKakugoDB.otf') format('opentype');
 }
 
-* { 
-    margin: 0; padding: 0; box-sizing: border-box; font-family: 'UDKakugo', sans-serif; 
-}
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'UDKakugo', sans-serif; }
 
-html, body { 
-    width: 100vw; height: 100vh; overflow: hidden; background-color: #1E346F; 
-}
+html, body { width: 100vw; height: 100vh; overflow: hidden; background-color: #1E346F; }
 
 /* 地図のiframe */
 #map-frame { 
@@ -23,17 +19,16 @@ html, body {
     position: absolute; top: 0; left: 0;
     width: 100%; height: 100%;
     z-index: 1000;
-    pointer-events: none; /* UIは地図をクリック透過させる */
+    pointer-events: none; /* 下の地図へのクリック透過用 */
 }
 
 #bg-labels { width: 100%; height: auto; display: block; pointer-events: none; }
 
 .data-overlay {
     position: absolute; color: #fff; font-weight: bold; font-size: 2.3vw;
-    pointer-events: auto;
+    pointer-events: auto; /* 文字部分はクリック可能 */
 }
 
-/* 日・時・分ごろのスタイル */
 .unit {
     font-size: 0.8em;
     vertical-align: 0.02em;
@@ -49,30 +44,19 @@ html, body {
     position: absolute; top: 0%; left: 0%;
     pointer-events: auto;
 }
-
 #max-scale-container img { height: 148px; width: auto; }
 
 #info-banner-container {
-    position: absolute;
-    top: 16px;
-    right: 20px;
-    
-    /* ここをグリッドに変更 */
+    position: absolute; top: 16px; right: 20px;
     display: grid;
-    grid-template-columns: 1fr 1fr; /* 2列にする */
-    gap: 10px;                     /* アイコン同士の隙間 */
-    
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
     align-items: flex-end;
     pointer-events: auto;
 }
 
 .banner-item { 
-    opacity: 0.1; 
-    transition: opacity 0.5s ease; 
-    max-width: 155px; /* サイズは画像に合わせて調整してください */
-    width: 100%;      /* グリッドに収めるために必要 */
+    opacity: 0.1; transition: opacity 0.5s ease; 
+    max-width: 155px; width: 100%; 
 }
-
-.banner-item.active { 
-    opacity: 1; 
-}
+.banner-item.active { opacity: 1; }
