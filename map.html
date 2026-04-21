@@ -2,53 +2,114 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; background-color: #0d1a3a; }
-        #map { width: 100vw; height: 100vh; }
-        .region { stroke: #fff; stroke-width: 0.5px; fill: #444; }
+        body, html { margin: 0; padding: 0; height: 100%; background: #173673; overflow: hidden; }
+        #map { height: 100%; width: 100%; background: #173673; }
+        .custom-icon { background: none; border: none; }
+        .custom-icon img { width: 100%; height: 100%; filter: drop-shadow(0px 0px 0px rgba(0,0,0,0.0)); }
     </style>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://unpkg.com/topojson@3"></script>
-    <script src="assets/json/mapping.js"></script>
 </head>
 <body>
-    <svg id="map"></svg>
-
+    <div id="map"></div>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/topojson-client@3"></script>
     <script>
-        const svg = d3.select("#map");
-        // 日本地図用プロジェクション（位置調整が必要な場合はここを調整）
-        const projection = d3.geoMercator().center([137, 36]).scale(2000).translate([window.innerWidth/2, window.innerHeight/2]);
-        const path = d3.geoPath().projection(projection);
+        const cacheRoll = new Date().getTime();
+        const CITY_TOPO = "https://gensai-lab.github.io/eim/smap-topojson.json?v=" + cacheRoll;
+        const PREF_TOPO = "https://gensai-lab.github.io/eim/tmap-topojson.json?v=" + cacheRoll;
+        const POINTS_DATA = "https://gensai-lab.github.io/eim/points.json?v=" + cacheRoll; 
+        const QUAKE_JSON = "https://gensai-lab.github.io/eim/quake.json?v=" + cacheRoll;
 
-        // 初期表示
-        function initMap() {
-            // mapping.js内のデータ変数名が 'mapData' だと仮定しています
-            // ※mapping.js内の変数名に合わせて調整してください
-            if (typeof mapData !== 'undefined') {
-                svg.selectAll("path")
-                   .data(topojson.feature(mapData, mapData.objects.pref).features)
-                   .enter().append("path")
-                   .attr("d", path)
-                   .attr("class", "region")
-                   .attr("id", d => d.properties.name);
-            }
+        const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([36.5, 140.0], 5);
+        const p2pScaleMap = {10:"1", 20:"2", 30:"3", 40:"4", 45:"5-", 50:"5+", 55:"6-", 60:"6+", 70:"7"};
+
+        async function init() {
+            try {
+                const [cityRes, prefRes, pointsRes, quakeRaw] = await Promise.all([
+                    fetch(CITY_TOPO).then(r => r.json()),
+                    fetch(PREF_TOPO).then(r => r.json()),
+                    fetch(POINTS_DATA).then(r => r.json()),
+                    fetch(QUAKE_JSON).then(r => r.json())
+                ]);
+
+                if (!quakeRaw.list || quakeRaw.list.length === 0) return;
+                const quakeRes = quakeRaw.list[0];
+
+                // 1. 地図の下地（市区町村）
+                L.geoJSON(topojson.feature(cityRes, cityRes.objects[Object.keys(cityRes.objects)[0]]), {
+                    style: { color: "#777777", weight: 1.5, fillColor: "#BFBFBF", fillOpacity: 1 }
+                }).addTo(map);
+
+                // 2. 都道府県境
+                L.geoJSON(topojson.feature(prefRes, prefRes.objects[Object.keys(prefRes.objects)[0]]), {
+                    style: { color: "#444444", weight: 1.5, fillOpacity: 0 }
+                }).addTo(map);
+
+                // 3. 震源地の描画（震度アイコンより背面に設定）
+                if (quakeRes.lat && quakeRes.lng) {
+                    L.marker([quakeRes.lat, quakeRes.lng], {
+                        icon: L.divIcon({ 
+                            className: 'custom-icon', 
+                            html: `<img src="https://gensai-lab.github.io/eim/assets/shingen.svg">`, 
+                            iconSize: [42, 42], iconAnchor: [21, 21] 
+                        }),
+                        // ★ zIndexOffsetを 100 に下げて、震度アイコン(1000〜)の背面に回るように調整
+                        zIndexOffset: 100 
+                    }).addTo(map);
+                }
+
+                // 4. 震度観測点の描画
+                if (quakeRes.points) {
+                    const areaMaxScales = {}; 
+                    quakeRes.points.forEach(p => {
+                        const name = p.addr;
+                        let foundKey = pointsRes[name] ? name : null;
+                        if (!foundKey) {
+                            for (const key in pointsRes) {
+                                if (name.includes(key) || key.includes(name)) {
+                                    foundKey = key;
+                                    break;
+                                }
+                            }
+                        }
+                        if (foundKey) {
+                            if (!areaMaxScales[foundKey] || p.scale > areaMaxScales[foundKey]) {
+                                areaMaxScales[foundKey] = p.scale;
+                            }
+                        }
+                    });
+
+                    const markerBounds = [];
+                    for (const [name, maxScale] of Object.entries(areaMaxScales)) {
+                        const c = pointsRes[name];
+                        if (!c) continue;
+
+                        const scaleKey = p2pScaleMap[maxScale] || "1";
+                        L.marker([c.lat, c.lng], {
+                            icon: L.divIcon({ 
+                                className: 'custom-icon', 
+                                html: `<img src="https://gensai-lab.github.io/eim/assets/${scaleKey}.svg">`, 
+                                iconSize: [32, 32], iconAnchor: [15, 15] 
+                            }),
+                            // ★ 震度は 1000 以上の優先度にして最前面へ
+                            zIndexOffset: 1000 + maxScale
+                        }).addTo(map);
+                        markerBounds.push([c.lat, c.lng]);
+                    }
+
+                    if (markerBounds.length > 0) {
+                        map.fitBounds(L.latLngBounds(markerBounds), { 
+                            paddingTopLeft: [400, 50], 
+                            paddingBottomRight: [50, 50],
+                            maxZoom: 8,
+                            animate: true
+                        });
+                    }
+                }
+            } catch (e) { console.error("Map Error:", e); }
         }
-
-        // 親画面 (index.html) からのデータ受信
-        window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'UPDATE_MAP') {
-                updateMap(event.data.data);
-            }
-        });
-
-        // データに応じた色付け処理
-        function updateMap(data) {
-            console.log("地図更新データ:", data);
-            // ここに震度ごとの色付けロジックを記述します
-            // 例: data.earthquake.intensity...
-        }
-
-        initMap();
+        init();
     </script>
 </body>
 </html>
