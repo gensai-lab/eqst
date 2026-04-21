@@ -7,8 +7,6 @@
         #map-container { width: 100vw; height: 100vh; }
         .pref-layer { fill: #2c3e50; stroke: #34495e; stroke-width: 0.5px; }
         .saibun-layer { fill: none; stroke: #ecf0f1; stroke-width: 0.3px; pointer-events: none; }
-        /* アイコン用クラス */
-        .intensity-icon { pointer-events: none; }
     </style>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://unpkg.com/topojson@3"></script>
@@ -17,69 +15,24 @@
     <svg id="map-container"></svg>
 
     <script>
+        // 地図の基本設定（この部分は残します）
         const svg = d3.select("#map-container");
         const projection = d3.geoMercator().center([137, 36]).scale(2000).translate([window.innerWidth/2, window.innerHeight/2]);
         const path = d3.geoPath().projection(projection);
-        
-        let pointsData = {}; // 座標データを保持する変数
 
-        // 3つのファイルを同時に読み込む
+        // 基本地図の描画
         Promise.all([
             d3.json("assets/json/todoufuken.json"),
-            d3.json("assets/json/saibun.json"),
-            d3.json("assets/json/points.json")
-        ]).then(([prefData, saibunData, pData]) => {
-            pointsData = pData; // 座標データを保存
-            
-            // 地図描画（既存）
+            d3.json("assets/json/saibun.json")
+        ]).then(([prefData, saibunData]) => {
             const prefKey = Object.keys(prefData.objects)[0];
             const saibunKey = Object.keys(saibunData.objects)[0];
-
-            svg.append("g").selectAll("path")
-               .data(topojson.feature(prefData, prefData.objects[prefKey]).features)
-               .enter().append("path").attr("d", path).attr("class", "pref-layer");
-
-            svg.append("g").selectAll("path")
-               .data(topojson.feature(saibunData, saibunData.objects[saibunKey]).features)
-               .enter().append("path").attr("d", path).attr("class", "saibun-layer");
+            svg.append("g").selectAll("path").data(topojson.feature(prefData, prefData.objects[prefKey]).features).enter().append("path").attr("d", path).attr("class", "pref-layer");
+            svg.append("g").selectAll("path").data(topojson.feature(saibunData, saibunData.objects[saibunKey]).features).enter().append("path").attr("d", path).attr("class", "saibun-layer");
         });
-
-        // 震度コードをファイル名に対応させる関数
-        function getScaleFileName(scale) {
-            const map = { 10: '1', 20: '2', 30: '3', 40: '4', 45: '5m', 50: '5p', 55: '6m', 60: '6p', 70: '7' };
-            return map[scale] || null;
-        }
-
-        // 親画面からの指示
-        window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'UPDATE_MAP') {
-                updateIcons(event.data.data.earthquake.points);
-            }
-        });
-
-        // アイコン配置ロジック
-        function updateIcons(points) {
-            // 前回のアイコンを全削除
-            svg.selectAll(".intensity-icon").remove();
-
-            points.forEach(p => {
-                const coord = pointsData[p.addr]; // points.jsonから座標を取得
-                if (coord) {
-                    const [x, y] = projection([coord.lng, coord.lat]);
-                    const filename = getScaleFileName(p.scale);
-                    
-                    if (filename) {
-                        svg.append("image")
-                           .attr("class", "intensity-icon")
-                           .attr("href", `assets/icons/${filename}.png`)
-                           .attr("x", x - 20) // アイコンの中心を合わせるためのオフセット
-                           .attr("y", y - 20)
-                           .attr("width", 40)
-                           .attr("height", 40);
-                    }
-                }
-            });
-        }
     </script>
+
+    <script src="assets/json/mapping.js"></script>
+    <script src="map_logic.js"></script>
 </body>
 </html>
