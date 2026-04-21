@@ -60,11 +60,13 @@ function updateMap(points) {
 
 // 日付フォーマットの修正
 function formatDate(timeStr) {
-    // 2026/04/21 01:05:00 形式を前提
+    // timeStr例: "2026/04/21 01:05:00"
     const [datePart, timePart] = timeStr.split(' ');
     const [year, month, day] = datePart.split('/');
     const [hour, min, sec] = timePart.split(':');
-    return `${parseInt(day)}日 ${parseInt(hour)}時 ${parseInt(min)}分ごろ`;
+    
+    // 日、時、分ごろ にそれぞれ span を適用
+    return `${parseInt(day)}<span class="unit">日 </span>${parseInt(hour)}<span class="unit">時 </span>${parseInt(min)}<span class="unit">分ごろ</span>`;
 }
 
 function renderUI(eq) {
