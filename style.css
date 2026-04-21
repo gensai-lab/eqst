@@ -55,7 +55,7 @@ html, body {
 
 /* 「日」「時」「分ごろ」のスタイル調整 */
 .unit {
-    font-size: 0.6em;       /* 数字に対して少し小さく */
+    font-size: 0.8em;       /* 数字に対して少し小さく */
     vertical-align: middle; /* 数字の真ん中に合わせる */
     margin-left: 2px;
 }
