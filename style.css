@@ -32,19 +32,19 @@ html, body { width: 100vw; height: 100vh; overflow: hidden; background-color: #1
 }
 
 /* 位置を％で厳密に指定 */
-#time-val { top: 28%; left: 35%; }
-#mag-val  { top: 28%; left: 66.5%; }
-#hypo-val { top: 72%; left: 35%; }
-#depth-val { top: 72%; left: 66.5%; }
+#time-val { top: -0.2%; left: 35%; }
+#mag-val  { top: -0.2%; left: 66.5%; }
+#hypo-val { top: 5.6%; left: 35%; }
+#depth-val { top: 5.6%; left: 66.5%; }
 
 #max-scale-container {
     position: absolute;
-    top: 25%;
-    left: 10%;
+    top: 0%;
+    left: 0%;
     pointer-events: auto;
 }
 
-#max-scale-container img { height: 150px; width: auto; }
+#max-scale-container img { height: 148px; width: auto; }
 
 #info-banner-container {
     position: absolute;
