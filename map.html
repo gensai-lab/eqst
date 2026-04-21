@@ -2,53 +2,54 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Map Viewer</title>
+    <style>
+        /* このCSSはこのファイルの中だけで有効です */
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #0d1a3a; }
+        #map-container { width: 100vw; height: 100vh; }
+        .pref-layer { fill: #2c3e50; stroke: #34495e; stroke-width: 0.5px; }
+        .saibun-layer { fill: none; stroke: #ecf0f1; stroke-width: 0.3px; pointer-events: none; }
+    </style>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://unpkg.com/topojson@3"></script>
-    <style>
-        body { margin: 0; background: #0d1a3a; overflow: hidden; }
-        svg { width: 100vw; height: 100vh; }
-        /* 都道府県レイヤー */
-        .pref-layer { fill: #333; stroke: #555; stroke-width: 0.5px; }
-        /* 細分区域レイヤー */
-        .saibun-layer { fill: none; stroke: #fff; stroke-width: 0.3px; pointer-events: none; }
-    </style>
 </head>
 <body>
-    <svg id="map"></svg>
+    <svg id="map-container"></svg>
 
     <script>
-        const svg = d3.select("#map");
+        // --- 1. 地図の描画設定 (このスコープ内に完結) ---
+        const svg = d3.select("#map-container");
         const projection = d3.geoMercator().center([137, 36]).scale(2000).translate([window.innerWidth/2, window.innerHeight/2]);
         const path = d3.geoPath().projection(projection);
 
-        // 2つのファイルを同時に読み込む
+        // 2つのファイルを独立して読み込む
         Promise.all([
             d3.json("assets/json/todoufuken.json"),
             d3.json("assets/json/saibun.json")
         ]).then(([prefData, saibunData]) => {
-            
-            // --- 1. 都道府県レイヤーの描画 ---
-            // ※ .objects.XXXX の XXXX を実際のキー名に変えてください
-            const prefKey = Object.keys(prefData.objects)[0]; 
-            svg.append("g")
-               .selectAll("path")
+            const prefKey = Object.keys(prefData.objects)[0];
+            const saibunKey = Object.keys(saibunData.objects)[0];
+
+            // 都道府県レイヤー
+            svg.append("g").selectAll("path")
                .data(topojson.feature(prefData, prefData.objects[prefKey]).features)
                .enter().append("path")
-               .attr("d", path)
-               .attr("class", "pref-layer");
+               .attr("d", path).attr("class", "pref-layer");
 
-            // --- 2. 細分区域レイヤーの描画 ---
-            const saibunKey = Object.keys(saibunData.objects)[0];
-            svg.append("g")
-               .selectAll("path")
+            // 細分区域レイヤー
+            svg.append("g").selectAll("path")
                .data(topojson.feature(saibunData, saibunData.objects[saibunKey]).features)
                .enter().append("path")
-               .attr("d", path)
-               .attr("class", "saibun-layer");
+               .attr("d", path).attr("class", "saibun-layer");
+        });
 
-        }).catch(err => {
-            console.error("地図データの読み込みに失敗しました:", err);
+        // --- 2. 親画面(index.html)からの指示を受け取る窓口 ---
+        window.addEventListener('message', (event) => {
+            // 安全のため、必要に応じて origin をチェックしてください
+            if (event.data && event.data.type === 'UPDATE_MAP') {
+                const eqData = event.data.data;
+                console.log("地震データを受信:", eqData);
+                // ここで色を変えるロジックなどを実行
+            }
         });
     </script>
 </body>
