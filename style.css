@@ -4,10 +4,9 @@ html, body { width: 100vw; height: 100vh; overflow: hidden; background-color: #1
 
 #map-frame { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; z-index: 1; }
 #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; pointer-events: none; }
-#bg-labels { width: 100%; height: auto; display: block; pointer-events: none; }
-.data-overlay { position: absolute; color: #fff; font-weight: bold; font-size: 2.3vw; pointer-events: auto; }
-.unit { font-size: 0.8em; vertical-align: 0.02em; margin-left: 2px; }
+#bg-labels { width: 100%; height: auto; display: block; }
 
+.data-overlay { position: absolute; color: #fff; font-weight: bold; font-size: 2.3vw; pointer-events: auto; }
 #time-val { top: -0.2%; left: 35%; }
 #mag-val  { top: -0.2%; left: 66.5%; }
 #hypo-val { top: 5.8%; left: 35%; }
@@ -16,13 +15,18 @@ html, body { width: 100vw; height: 100vh; overflow: hidden; background-color: #1
 #max-scale-container { position: absolute; top: 0%; left: 0%; pointer-events: auto; }
 #max-scale-container img { height: 148px; width: auto; }
 
+/* --- バナーレイアウト --- */
 #info-banner-container {
     position: absolute; top: 16px; right: 20px;
+    width: 350px;
     display: grid;
-    grid-template-columns: 1fr 1fr; /* 2列配置 */
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
-    align-items: flex-start;
     pointer-events: auto;
 }
-.banner-item { opacity: 0.1; transition: opacity 0.5s ease; max-width: 155px; width: 100%; }
+
+.banner-item { width: 100%; opacity: 0.1; transition: opacity 0.3s ease; }
 .banner-item.active { opacity: 1; }
+
+/* 津波画像のみ2列分(100%)にする */
+.tsunami-banner { grid-column: span 2; }
