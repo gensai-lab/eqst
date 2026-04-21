@@ -17,8 +17,8 @@ html, body { width: 100vw; height: 100vh; overflow: hidden; background-color: #1
 #depth-val { top: 5.8%; left: 66.5%; }
 
 /* 最大震度：z-indexを追加 */
-#max-scale-container { position: absolute; top: 2%; left: 2%; pointer-events: auto; z-index: 2000; }
-#max-scale-container img { height: 120px; width: auto; }
+#max-scale-container { position: absolute; top: 0%; left: 0%; pointer-events: auto; z-index: 2000; }
+#max-scale-container img { height: 147px; width: auto; }
 
 /* バナー */
 #info-banner-container {
