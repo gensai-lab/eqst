@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>Kactuif Disaster Simulation</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/topojson@3"></script>
+    <script src="assets/json/mapping.js"></script>
     <script src="script.js"></script>
 </head>
 <body>
@@ -18,9 +20,11 @@
         <div class="data-overlay" id="depth-val">---</div>
         
         <div id="max-scale-container"></div>
-        
+
         <div id="info-banner-container">
-            <img src="assets/banner/tm_n.png" id="status-tsunami" class="banner-item">
+            <img src="assets/banner/tm_n.png" id="status-tsunami-n" class="banner-item">
+            <img src="assets/banner/tm_j.png" id="status-tsunami-j" class="banner-item">
+            <img src="assets/banner/tm_i.png" id="status-tsunami-i" class="banner-item">
             <img src="assets/banner/eew.png" id="status-eew" class="banner-item">
             <img src="assets/banner/enchi.png" id="status-enchi" class="banner-item">
         </div>
