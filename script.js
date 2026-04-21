@@ -9,6 +9,12 @@ async function fetchEarthquakeData() {
     } catch (e) { console.error("データ取得エラー:", e); }
 }
 
+function updateMapInIframe(points) {
+    const frame = document.getElementById('map-frame');
+    // 子ページへデータを送る
+    frame.contentWindow.postMessage({ type: 'UPDATE_MAP', points: points }, '*');
+}
+
 async function loadMapData() {
     try {
         const [saibunRes, prefRes] = await Promise.all([
