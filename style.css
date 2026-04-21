@@ -3,12 +3,29 @@
     src: url('assets/UDKakugoDB.otf') format('opentype');
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'UDKakugo', sans-serif; }
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+    font-family: 'UDKakugo', sans-serif; 
+}
 
-html, body { width: 100vw; height: 100vh; overflow: hidden; background-color: #1E346F; }
+html, body { 
+    width: 100vw; 
+    height: 100vh; 
+    overflow: hidden; 
+    background-color: #1E346F; 
+}
 
 /* 地図は最背面 */
-#map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+#map { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    z-index: 1; 
+}
 
 /* UIレイヤーを地図の上に固定 */
 #ui-layer {
@@ -21,14 +38,26 @@ html, body { width: 100vw; height: 100vh; overflow: hidden; background-color: #1
     pointer-events: none; /* マウス操作を地図へ透過 */
 }
 
-#bg-labels { width: 100%; height: auto; display: block; pointer-events: none; }
+#bg-labels { 
+    width: 100%; 
+    height: auto; 
+    display: block; 
+    pointer-events: none; 
+}
 
 .data-overlay {
     position: absolute;
     color: #fff;
     font-weight: bold;
     font-size: 2.3vw;
-    pointer-events: auto; /* 文字はクリック可能にするならauto */
+    pointer-events: auto;
+}
+
+/* 「日」「時」「分ごろ」のスタイル調整 */
+.unit {
+    font-size: 0.6em;       /* 数字に対して少し小さく */
+    vertical-align: middle; /* 数字の真ん中に合わせる */
+    margin-left: 2px;
 }
 
 /* 位置を％で厳密に指定 */
@@ -44,7 +73,10 @@ html, body { width: 100vw; height: 100vh; overflow: hidden; background-color: #1
     pointer-events: auto;
 }
 
-#max-scale-container img { height: 148px; width: auto; }
+#max-scale-container img { 
+    height: 148px; 
+    width: auto; 
+}
 
 #info-banner-container {
     position: absolute;
@@ -57,5 +89,12 @@ html, body { width: 100vw; height: 100vh; overflow: hidden; background-color: #1
     pointer-events: auto;
 }
 
-.banner-item { opacity: 0.1; transition: opacity 0.5s ease; max-width: 155px; }
-.banner-item.active { opacity: 1; }
+.banner-item { 
+    opacity: 0.1; 
+    transition: opacity 0.5s ease; 
+    max-width: 155px; 
+}
+
+.banner-item.active { 
+    opacity: 1; 
+}
