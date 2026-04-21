@@ -4,14 +4,10 @@
     <meta charset="UTF-8">
     <title>Kactuif Disaster Simulation</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/topojson@3"></script>
-    <script src="assets/json/mapping.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="script.js"></script>
 </head>
 <body>
-    <div id="map"></div>
+    <iframe src="map.html" id="map-frame"></iframe>
 
     <div id="ui-layer">
         <img src="assets/label/back.png" id="bg-labels">
@@ -22,15 +18,12 @@
         <div class="data-overlay" id="depth-val">---</div>
         
         <div id="max-scale-container"></div>
-        <div id="info-banner-container"></div>
-
-    <div id="info-banner-container">
-        <img src="assets/banner/tm_n.png" id="status-tsunami" class="banner-item">
-        <img src="assets/banner/eew.png" id="status-eew" class="banner-item">
-        <img src="assets/banner/enchi.png" id="status-enchi" class="banner-item">
-    </div>
         
-    <iframe src="map.html" id="map-frame" style="border:none; width:100%; height:100%; position:absolute; top:0; left:0; z-index:1;"></iframe>
-    <div id="ui-layer" style="z-index: 1000; position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none;"></div>
+        <div id="info-banner-container">
+            <img src="assets/banner/tm_n.png" id="status-tsunami" class="banner-item">
+            <img src="assets/banner/eew.png" id="status-eew" class="banner-item">
+            <img src="assets/banner/enchi.png" id="status-enchi" class="banner-item">
+        </div>
+    </div>
 </body>
 </html>
