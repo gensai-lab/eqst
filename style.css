@@ -11,7 +11,7 @@ html, body { width: 100vw; height: 100vh; overflow: hidden; background-color: #1
 
 .data-overlay { position: absolute; color: #fff; font-weight: bold; font-size: 2.3vw; pointer-events: auto; }
 /* 日時単位のサイズ調整 */
-.data-overlay .unit { font-size: 0.8em !important; vertical-align: middle; margin-left: 2px; }
+.data-overlay .unit { font-size: 0.8em !important; vertical-align: 2px; margin-left: 2px; }
 
 #time-val { top: -0.2%; left: 35%; }
 #mag-val  { top: -0.2%; left: 66.5%; }
