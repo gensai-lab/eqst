@@ -1,4 +1,3 @@
-// 画像の定義
 const TSUNAMI_IMAGES = {
     'None': 'assets/banner/tm_n.png',
     'Checking': 'assets/banner/tm_j.png',
@@ -6,35 +5,37 @@ const TSUNAMI_IMAGES = {
     'Advisory': 'assets/banner/tm_i.png'
 };
 
-async function fetchEarthquakeData() {
-    try {
-        const response = await fetch('https://api.p2pquake.net/v2/history?codes=551&limit=1');
-        const data = await response.json();
-        if (data.length > 0) renderUI(data[0]);
-    } catch (e) { console.error("データ取得エラー:", e); }
-}
-
 function renderUI(eq) {
     if (!eq || !eq.earthquake) return;
     const e = eq.earthquake;
 
-    // テキスト更新
     document.getElementById('time-val').innerHTML = formatDate(e.time);
     document.getElementById('mag-val').innerText = `M${e.hypocenter.magnitude.toFixed(1)}`;
     document.getElementById('hypo-val').innerText = e.hypocenter.name;
     document.getElementById('depth-val').innerText = `${e.hypocenter.depth}km`;
 
-    // 津波画像の切り替え
+    // 震度アイコン描画
+    const scaleContainer = document.getElementById('max-scale-container');
+    scaleContainer.innerHTML = '';
+    const scaleMap = { 10: '1', 20: '2', 30: '3', 40: '4', 45: '5m', 50: '5p', 55: '6m', 60: '6p', 70: '7' };
+    
+    // 最大震度が定義されている場合のみ画像を作成
+    if (e.maxScale && scaleMap[e.maxScale]) {
+        const img = document.createElement('img');
+        img.src = `assets/banner/${scaleMap[e.maxScale]}.png`;
+        scaleContainer.appendChild(img);
+    }
+
+    // 津波バナー
     const tsunamiImg = document.getElementById('status-tsunami');
     const status = e.domesticTsunami || 'None';
     tsunamiImg.src = TSUNAMI_IMAGES[status] || TSUNAMI_IMAGES['None'];
-    tsunamiImg.classList.add('active'); // 津波情報は常に表示状態にする想定
+    tsunamiImg.classList.add('active');
 
-    // EEWと遠地地震の更新
+    // EEWと遠地地震
     document.getElementById('status-eew').classList.toggle('active', eq.isEew === true);
     document.getElementById('status-enchi').classList.toggle('active', e.hypocenter.name.includes('海外'));
 
-    // 地図更新
     sendToMap(eq);
 }
 
