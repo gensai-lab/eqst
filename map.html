@@ -2,38 +2,54 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <title>Map Viewer</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://unpkg.com/topojson@3"></script>
-    <script src="assets/json/mapping.js"></script>
     <style>
-        body { margin: 0; background: #0d1a3a; }
-        .region { stroke: #fff; stroke-width: 0.5px; fill: #444; }
+        body { margin: 0; background: #0d1a3a; overflow: hidden; }
+        svg { width: 100vw; height: 100vh; }
+        /* 都道府県レイヤー */
+        .pref-layer { fill: #333; stroke: #555; stroke-width: 0.5px; }
+        /* 細分区域レイヤー */
+        .saibun-layer { fill: none; stroke: #fff; stroke-width: 0.3px; pointer-events: none; }
     </style>
 </head>
 <body>
-    <svg id="map" width="100vw" height="100vh"></svg>
+    <svg id="map"></svg>
+
     <script>
-        // 【重要】 mapping.jsの中にある変数名を指定してください
-        // 例えば mapping.js が 'const kactuifMap = { ... }' なら、ここも kactuifMap に変える必要があります
-        const data = typeof mapData !== 'undefined' ? mapData : null; 
+        const svg = d3.select("#map");
+        const projection = d3.geoMercator().center([137, 36]).scale(2000).translate([window.innerWidth/2, window.innerHeight/2]);
+        const path = d3.geoPath().projection(projection);
 
-        if (data) {
-            const svg = d3.select("#map");
-            const projection = d3.geoMercator().center([137, 36]).scale(2000).translate([500, 400]);
-            const path = d3.geoPath().projection(projection);
-
-            // 【重要】 data.objects.XXXX の XXXX が mapping.js の中身と一致しているか要確認
-            // コンソールで data.objects を確認してください
-            const key = Object.keys(data.objects)[0]; 
+        // 2つのファイルを同時に読み込む
+        Promise.all([
+            d3.json("assets/json/todoufuken.json"),
+            d3.json("assets/json/saibun.json")
+        ]).then(([prefData, saibunData]) => {
             
-            svg.selectAll("path")
-               .data(topojson.feature(data, data.objects[key]).features)
+            // --- 1. 都道府県レイヤーの描画 ---
+            // ※ .objects.XXXX の XXXX を実際のキー名に変えてください
+            const prefKey = Object.keys(prefData.objects)[0]; 
+            svg.append("g")
+               .selectAll("path")
+               .data(topojson.feature(prefData, prefData.objects[prefKey]).features)
                .enter().append("path")
                .attr("d", path)
-               .attr("class", "region");
-        } else {
-            console.error("地図データが見つかりません。mapping.jsの変数名を確認してください。");
-        }
+               .attr("class", "pref-layer");
+
+            // --- 2. 細分区域レイヤーの描画 ---
+            const saibunKey = Object.keys(saibunData.objects)[0];
+            svg.append("g")
+               .selectAll("path")
+               .data(topojson.feature(saibunData, saibunData.objects[saibunKey]).features)
+               .enter().append("path")
+               .attr("d", path)
+               .attr("class", "saibun-layer");
+
+        }).catch(err => {
+            console.error("地図データの読み込みに失敗しました:", err);
+        });
     </script>
 </body>
 </html>
