@@ -53,12 +53,26 @@ html, body {
 #max-scale-container img { height: 148px; width: auto; }
 
 #info-banner-container {
-    position: absolute; top: 16px; right: 20px;
-    display: flex; flex-direction: column; gap: 10px;
-    align-items: flex-end; pointer-events: auto;
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    
+    /* ここをグリッドに変更 */
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 2列にする */
+    gap: 10px;                     /* アイコン同士の隙間 */
+    
+    align-items: flex-end;
+    pointer-events: auto;
 }
 
 .banner-item { 
-    opacity: 0.1; transition: opacity 0.5s ease; max-width: 155px; 
+    opacity: 0.1; 
+    transition: opacity 0.5s ease; 
+    max-width: 155px; /* サイズは画像に合わせて調整してください */
+    width: 100%;      /* グリッドに収めるために必要 */
 }
-.banner-item.active { opacity: 1; }
+
+.banner-item.active { 
+    opacity: 1; 
+}
