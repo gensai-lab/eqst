@@ -79,37 +79,48 @@ function renderIcons(rawPoints) {
     });
 }
 
-// 震源地アイコン描画ロジック
+// 震源地アイコン描画ロジック（デバッグ用）
 function renderHypocenter(hypocenter) {
     const svg = d3.select("#map-container");
     
-    // 古い震源地アイコンを削除
+    // 古いアイコンを削除
     svg.selectAll(".shingen-icon").remove();
+    svg.selectAll(".debug-circle").remove(); // デバッグ用の円も削除
 
-    console.log("--- 震源地描画 ---", hypocenter);
+    console.log("--- 震源地デバッグ開始 ---");
+    console.log("Hypocenterデータ詳細:", JSON.stringify(hypocenter));
 
-    // P2P API仕様に基づき latitude / longitude を使用
-    const lat = hypocenter.latitude;
-    const lon = hypocenter.longitude;
+    // 緯度経度のキー名を確認（両方のパターンを試す）
+    const lat = hypocenter.latitude || hypocenter.lat;
+    const lon = hypocenter.longitude || hypocenter.lon;
 
     if (typeof lat === 'undefined' || typeof lon === 'undefined') {
-        console.warn("震源地データに緯度経度が含まれていません:", hypocenter);
+        console.error("緯度経度が見つかりません。データ構造を確認してください:", hypocenter);
         return;
     }
 
-    // D3のprojectionは [経度, 緯度] の順
-    const [x, y] = projection([lon, lat]);
+    console.log(`使用する座標: 緯度=${lat}, 経度=${lon}`);
 
-    if (!isNaN(x) && !isNaN(y)) {
-        svg.append("image")
-           .attr("class", "shingen-icon")
-           .attr("href", "https://gensai-lab.github.io/eqst/assets/icons/shingen.png")
-           .attr("x", x - 25)
-           .attr("y", y - 25)
-           .attr("width", 50)
-           .attr("height", 50);
-        console.log(`震源地を表示しました: (${lat}, ${lon}) at (${x}, ${y})`);
-    } else {
-        console.error("座標変換でNaNが発生しました:", {x, y});
+    // 座標変換
+    const [x, y] = projection([lon, lat]);
+    console.log(`変換されたSVG座標: x=${x}, y=${y}`);
+
+    if (isNaN(x) || isNaN(y)) {
+        console.error("座標変換結果がNaNです。投影範囲外の可能性があります。");
+        return;
     }
+
+    // ★重要テスト：画像ではなく「赤い円」を描画する
+    // これで表示されれば、画像パス(URL)や読み込みの問題
+    // これでも表示されなければ、座標（projection）の問題
+    svg.append("circle")
+       .attr("class", "debug-circle")
+       .attr("cx", x)
+       .attr("cy", y)
+       .attr("r", 15) // 半径15
+       .attr("fill", "red")
+       .attr("stroke", "white")
+       .attr("stroke-width", 2);
+
+    console.log("デバッグ用の赤い円を描画しました。");
 }
