@@ -14,13 +14,17 @@ d3.select("#map-container").call(zoom);
 // 2. 座標データ(points.json)読み込み
 const pointsReady = d3.json("assets/json/points.json").then(data => {
     pointsData = data;
-    console.log("座標データ読み込み完了");
 });
 
-// 3. デバッグ用：震度アイコン描画（画像ではなく赤い丸）
+// 3. 震度アイコンのファイル名変換
+function getScaleFileName(scale) {
+    const map = { 10: '1', 20: '2', 30: '3', 40: '4', 45: '5m', 50: '5p', 55: '6m', 60: '6p', 70: '7' };
+    return map[scale] || null;
+}
+
+// 4. アイコン描画
 function renderIcons(points) {
     const mapContent = d3.select("#map-content");
-    // アイコンや丸をクリア
     mapContent.selectAll(".intensity-icon").remove();
 
     points.forEach(p => {
@@ -31,44 +35,44 @@ function renderIcons(points) {
                     : municipality;
 
         const coord = pointsData[key];
-        
         if (coord) {
-            // window.projection を使用
             const [x, y] = window.projection([coord.lng, coord.lat]);
-            
-            mapContent.append("circle")
-               .attr("class", "intensity-icon")
-               .attr("cx", x)
-               .attr("cy", y)
-               .attr("r", 5)
-               .attr("fill", "red");
+            const filename = getScaleFileName(p.scale);
+            if (filename) {
+                mapContent.append("image")
+                   .attr("class", "intensity-icon")
+                   .attr("href", `https://gensai-lab.github.io/eqst/assets/icons/${filename}.png`)
+                   .attr("x", x - 15) // サイズ30の半分
+                   .attr("y", y - 15)
+                   .attr("width", 30)
+                   .attr("height", 30);
+            }
         }
     });
 }
 
-// 4. デバッグ用：震源地描画（画像ではなく青い丸）
+// 5. 震源地描画
 function renderHypocenter(hypocenter) {
     const mapContent = d3.select("#map-content");
     mapContent.selectAll(".shingen-icon").remove();
 
     if (hypocenter && hypocenter.latitude && hypocenter.longitude) {
-        // window.projection を使用
         const [x, y] = window.projection([hypocenter.longitude, hypocenter.latitude]);
-
-        mapContent.append("circle")
+        mapContent.append("image")
            .attr("class", "shingen-icon")
-           .attr("cx", x)
-           .attr("cy", y)
-           .attr("r", 10)
-           .attr("fill", "blue");
+           .attr("href", "https://gensai-lab.github.io/eqst/assets/icons/shingen.png")
+           .attr("x", x - 20) // サイズ40の半分
+           .attr("y", y - 20)
+           .attr("width", 40)
+           .attr("height", 40);
     }
 }
 
-// 5. ズーム適用
-function applyZoom(coords) {
+// 6. 中央配置ズーム
+function zoomToFit(coords) {
     const svg = d3.select("#map-container");
-    const width = 800; 
-    const height = 600; 
+    const width = window.innerWidth;
+    const height = window.innerHeight;
 
     const minLng = d3.min(coords, d => d[0]);
     const maxLng = d3.max(coords, d => d[0]);
@@ -86,10 +90,13 @@ function applyZoom(coords) {
     const scale = Math.min(0.7 / Math.max(dx / width, dy / height), 8);
     const translate = [width / 2 - scale * x, height / 2 - scale * y];
 
-    svg.call(zoom.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
+    svg.transition().duration(1500).call(
+        zoom.transform,
+        d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
+    );
 }
 
-// 6. データ処理と実行
+// 7. データ処理
 async function processEarthquakeData(rawData) {
     await pointsReady;
 
@@ -114,11 +121,11 @@ async function processEarthquakeData(rawData) {
     }
 
     if (pointsToFit.length > 0) {
-        applyZoom(pointsToFit);
+        zoomToFit(pointsToFit);
     }
 }
 
-// 7. API取得関数
+// 8. API取得と実行
 async function fetchLatestEarthquake() {
     try {
         const response = await fetch("https://api.p2pquake.net/v2/history?codes=551&limit=1");
@@ -131,6 +138,5 @@ async function fetchLatestEarthquake() {
     }
 }
 
-// 実行
 setInterval(fetchLatestEarthquake, 10000);
 fetchLatestEarthquake();
