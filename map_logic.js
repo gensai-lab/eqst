@@ -1,5 +1,10 @@
 // map_logic.js
 
+// --- 【設定】ここでアイコンの大きさを調整できます ---
+const ICON_SIZE = 30;      // 震度アイコンのサイズ（px）
+const SHINGEN_SIZE = 40;   // 震源アイコンのサイズ（px）
+// ------------------------------------------------
+
 let pointsData = {};
 
 // 1. ズーム機能の初期化
@@ -42,10 +47,10 @@ function renderIcons(points) {
                 mapContent.append("image")
                    .attr("class", "intensity-icon")
                    .attr("href", `https://gensai-lab.github.io/eqst/assets/icons/${filename}.png`)
-                   .attr("x", x - 15) // サイズ30の半分
-                   .attr("y", y - 15)
-                   .attr("width", 30)
-                   .attr("height", 30);
+                   .attr("x", x - (ICON_SIZE / 2)) // サイズの半分を引く
+                   .attr("y", y - (ICON_SIZE / 2))
+                   .attr("width", ICON_SIZE)
+                   .attr("height", ICON_SIZE);
             }
         }
     });
@@ -61,10 +66,10 @@ function renderHypocenter(hypocenter) {
         mapContent.append("image")
            .attr("class", "shingen-icon")
            .attr("href", "https://gensai-lab.github.io/eqst/assets/icons/shingen.png")
-           .attr("x", x - 20) // サイズ40の半分
-           .attr("y", y - 20)
-           .attr("width", 40)
-           .attr("height", 40);
+           .attr("x", x - (SHINGEN_SIZE / 2)) // サイズの半分を引く
+           .attr("y", y - (SHINGEN_SIZE / 2))
+           .attr("width", SHINGEN_SIZE)
+           .attr("height", SHINGEN_SIZE);
     }
 }
 
