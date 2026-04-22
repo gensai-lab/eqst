@@ -38,10 +38,10 @@ async function processEarthquakeData(rawData) {
     await Promise.all([mapReady, pointsReady]);
 
     // 震度アイコンの描画 (rawData.earthquake.points があるか確認)
-    if (rawData.earthquake && rawData.earthquake.points) {
+    if (rawData.earthquake && rawData.earthquake.points && rawData.earthquake.points.length > 0) {
         renderIcons(rawData.earthquake.points);
     } else {
-        console.warn("震度情報(points)が見つかりません。");
+        console.log("今回は震度情報(points)を含まないデータ、または震度データなしの速報です。");
     }
     
     // 震源地の描画
@@ -60,13 +60,18 @@ function renderIcons(rawPoints) {
     svg.selectAll(".intensity-icon").remove(); // 古い震度アイコンを削除
 
     rawPoints.forEach(p => {
-        // AREA_MAPPINGを使用して、P2Pの地点名を座標用キーに変換
-        const regionName = (typeof AREA_MAPPING !== 'undefined' && AREA_MAPPING[p.pref] && AREA_MAPPING[p.pref][p.addr]) ? 
-                            AREA_MAPPING[p.pref][p.addr] : null;
+        // 1. 自動抽出: 「市」「町」「村」「区」で文字列をカットする
+        const match = p.addr.match(/^.+?[市町村区]/);
+        const municipality = match ? match[0] : p.addr;
 
-        if (!regionName) return; // マッピングがない地点はスキップ
+        // 2. mapping.js による変換 (例外対応)
+        // AREA_MAPPINGに登録があればそちらを優先、なければ自動抽出した名前を使う
+        const key = (typeof AREA_MAPPING !== 'undefined' && AREA_MAPPING[p.pref] && AREA_MAPPING[p.pref][municipality]) 
+                    ? AREA_MAPPING[p.pref][municipality] 
+                    : municipality;
 
-        const coord = pointsData[regionName];
+        // 3. points.json で座標を照合
+        const coord = pointsData[key];
         
         if (coord) {
             const [x, y] = projection([coord.lng, coord.lat]);
@@ -81,9 +86,11 @@ function renderIcons(rawPoints) {
                    .attr("width", 40)
                    .attr("height", 40);
             }
+        } else {
+            console.warn(`[スキップ] 座標が見つかりません: ${p.pref} ${p.addr} (抽出: ${municipality} -> キー: ${key})`);
         }
     });
-    console.log(`震度アイコンを ${rawPoints.length} 個配置しました。`);
+    console.log(`震度アイコンを ${rawPoints.length} 個配置しようと試みました。`);
 }
 
 // --- 震源地アイコン描画ロジック ---
