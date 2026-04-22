@@ -102,7 +102,7 @@ function renderHypocenter(hypocenter) {
         
         svg.append("image")
            .attr("class", "shingen-icon")
-           .attr("href", "assets/icons/shingen.png")
+           .attr("href", "https://gensai-lab.github.io/eqst/assets/icons/shingen.png")
            .attr("x", x - 25) // アイコンサイズに合わせて調整（例：50pxなら-25）
            .attr("y", y - 25)
            .attr("width", 50)
