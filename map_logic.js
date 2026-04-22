@@ -2,7 +2,7 @@
 
 let pointsData = {};
 
-// 1. ズーム機能の初期化（アニメーションなし）
+// 1. ズーム機能の初期化
 const zoom = d3.zoom()
     .scaleExtent([1, 10])
     .on("zoom", (event) => {
@@ -20,6 +20,7 @@ const pointsReady = d3.json("assets/json/points.json").then(data => {
 // 3. デバッグ用：震度アイコン描画（画像ではなく赤い丸）
 function renderIcons(points) {
     const mapContent = d3.select("#map-content");
+    // アイコンや丸をクリア
     mapContent.selectAll(".intensity-icon").remove();
 
     points.forEach(p => {
@@ -32,8 +33,8 @@ function renderIcons(points) {
         const coord = pointsData[key];
         
         if (coord) {
-            const [x, y] = projection([coord.lng, coord.lat]);
-            console.log(`描画テスト: ${key} -> x:${x}, y:${y}`);
+            // window.projection を使用
+            const [x, y] = window.projection([coord.lng, coord.lat]);
             
             mapContent.append("circle")
                .attr("class", "intensity-icon")
@@ -41,8 +42,6 @@ function renderIcons(points) {
                .attr("cy", y)
                .attr("r", 5)
                .attr("fill", "red");
-        } else {
-            console.log(`座標が見つかりません: ${key}`);
         }
     });
 }
@@ -53,8 +52,8 @@ function renderHypocenter(hypocenter) {
     mapContent.selectAll(".shingen-icon").remove();
 
     if (hypocenter && hypocenter.latitude && hypocenter.longitude) {
-        const [x, y] = projection([hypocenter.longitude, hypocenter.latitude]);
-        console.log(`震源テスト: x:${x}, y:${y}`);
+        // window.projection を使用
+        const [x, y] = window.projection([hypocenter.longitude, hypocenter.latitude]);
 
         mapContent.append("circle")
            .attr("class", "shingen-icon")
@@ -65,7 +64,7 @@ function renderHypocenter(hypocenter) {
     }
 }
 
-// 5. ズーム適用（アニメーションなし）
+// 5. ズーム適用
 function applyZoom(coords) {
     const svg = d3.select("#map-container");
     const width = 800; 
@@ -76,8 +75,8 @@ function applyZoom(coords) {
     const minLat = d3.min(coords, d => d[1]);
     const maxLat = d3.max(coords, d => d[1]);
 
-    const p1 = projection([minLng, maxLat]);
-    const p2 = projection([maxLng, minLat]);
+    const p1 = window.projection([minLng, maxLat]);
+    const p2 = window.projection([maxLng, minLat]);
 
     const dx = p2[0] - p1[0];
     const dy = p2[1] - p1[1];
@@ -87,7 +86,6 @@ function applyZoom(coords) {
     const scale = Math.min(0.7 / Math.max(dx / width, dy / height), 8);
     const translate = [width / 2 - scale * x, height / 2 - scale * y];
 
-    // 即時適用
     svg.call(zoom.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
 }
 
@@ -95,15 +93,11 @@ function applyZoom(coords) {
 async function processEarthquakeData(rawData) {
     await pointsReady;
 
-    // データ構造の自動判定
     const points = rawData.points || (rawData.earthquake ? rawData.earthquake.points : []);
     const hypocenter = rawData.hypocenter || (rawData.earthquake ? rawData.earthquake.hypocenter : null);
 
-    console.log("取得データ確認:", rawData);
-
     let pointsToFit = [];
 
-    // アイコン処理
     if (points.length > 0) {
         renderIcons(points);
         points.forEach(p => {
@@ -114,13 +108,11 @@ async function processEarthquakeData(rawData) {
         });
     }
     
-    // 震源地処理
     if (hypocenter) {
         renderHypocenter(hypocenter);
         pointsToFit.push([hypocenter.longitude, hypocenter.latitude]);
     }
 
-    // ズーム
     if (pointsToFit.length > 0) {
         applyZoom(pointsToFit);
     }
@@ -139,6 +131,6 @@ async function fetchLatestEarthquake() {
     }
 }
 
-// 8. 実行
+// 実行
 setInterval(fetchLatestEarthquake, 10000);
 fetchLatestEarthquake();
