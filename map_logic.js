@@ -1,7 +1,15 @@
 // map_logic.js
 
 let pointsData = {}; // 座標データ格納用
-// 注意: AREA_MAPPING は別ファイル(mapping.js)で読み込まれている前提です
+// ズーム機能の定義 (map-container全体に適用)
+const zoom = d3.zoom()
+    .scaleExtent([1, 8]) // 拡大縮小の範囲
+    .on("zoom", (event) => {
+        d3.select("#map-container g").attr("transform", event.transform);
+    });
+
+// 地図SVGにズーム動作を付与
+d3.select("#map-container").call(zoom);
 
 // points.jsonの読み込み
 const pointsReady = d3.json("assets/json/points.json").then(data => {
@@ -11,7 +19,6 @@ const pointsReady = d3.json("assets/json/points.json").then(data => {
 
 // 震度アイコンのファイル名マッピング
 function getScaleFileName(scale) {
-    // 震度: 10=1, 20=2, 30=3, 40=4, 45=5弱, 50=5強, 55=6弱, 60=6強, 70=7
     const map = { 10: '1', 20: '2', 30: '3', 40: '4', 45: '5m', 50: '5p', 55: '6m', 60: '6p', 70: '7' };
     return map[scale] || null;
 }
@@ -24,7 +31,6 @@ async function fetchLatestEarthquake() {
         
         if (data && data.length > 0) {
             const latestEarthquake = data[0];
-            console.log("P2P APIから最新データを受信:", latestEarthquake);
             processEarthquakeData(latestEarthquake);
         }
     } catch (err) {
@@ -34,85 +40,106 @@ async function fetchLatestEarthquake() {
 
 // データの処理と描画
 async function processEarthquakeData(rawData) {
-    // デバッグ用：構造を確実に見るためのログ
-    console.log("デバッグ用RawData:", rawData);
-    
     await Promise.all([mapReady, pointsReady]);
 
-    // 【修正箇所】pointsがどこにあるか柔軟に探す
-    // 1. 直下にあるか (rawData.points)
-    // 2. earthquakeの中にあるか (rawData.earthquake.points)
-    const points = rawData.points || (rawData.earthquake ? rawData.earthquake.points : null);
-
-    // 震度アイコンの描画
-    if (points && points.length > 0) {
-        console.log("震度情報を発見しました。アイコンを描画します。");
-        renderIcons(points);
-    } else {
-        console.log("震度情報(points)は見つかりませんでした。データ構造を確認してください。");
+    // 1. まずアイコンと震源を描画
+    let pointsToFit = [];
+    if (rawData.earthquake && rawData.earthquake.points) {
+        renderIcons(rawData.earthquake.points);
+        // ズーム用に座標を収集
+        rawData.earthquake.points.forEach(p => {
+             const match = p.addr.match(/^.+?[市町村区]/);
+             const municipality = match ? match[0] : p.addr;
+             const key = (typeof AREA_MAPPING !== 'undefined' && AREA_MAPPING[p.pref] && AREA_MAPPING[p.pref][municipality]) ? AREA_MAPPING[p.pref][municipality] : municipality;
+             if (pointsData[key]) pointsToFit.push([pointsData[key].lng, pointsData[key].lat]);
+        });
     }
     
-    // 震源地の描画 (震源地も場所が変わっていないか念のため確認)
-    const hypocenter = rawData.earthquake ? rawData.earthquake.hypocenter : null;
-    if (hypocenter) {
-        renderHypocenter(hypocenter);
+    if (rawData.earthquake && rawData.earthquake.hypocenter) {
+        renderHypocenter(rawData.earthquake.hypocenter);
+        // ズーム用に震源地座標を追加
+        pointsToFit.push([rawData.earthquake.hypocenter.longitude, rawData.earthquake.hypocenter.latitude]);
     }
+
+    // 2. 収集した座標に合わせてズーム
+    if (pointsToFit.length > 0) {
+        zoomToFit(pointsToFit);
+    }
+}
+
+// --- ズームしてフィットさせる関数 ---
+function zoomToFit(coords) {
+    const svg = d3.select("#map-container");
+    const width = 800; // SVGの幅に合わせて調整してください
+    const height = 600; // SVGの高さに合わせて調整してください
+
+    // 全ての点のmin/maxを計算
+    const minLng = d3.min(coords, d => d[0]);
+    const maxLng = d3.max(coords, d => d[0]);
+    const minLat = d3.min(coords, d => d[1]);
+    const maxLat = d3.max(coords, d => d[1]);
+
+    // プロジェクション座標に変換
+    const p1 = projection([minLng, maxLat]); // 左上
+    const p2 = projection([maxLng, minLat]); // 右下
+
+    // 適切なスケールを計算 (少し余裕を持たせる)
+    const dx = p2[0] - p1[0];
+    const dy = p2[1] - p1[1];
+    const x = (p1[0] + p2[0]) / 2;
+    const y = (p1[1] + p2[1]) / 2;
+    const scale = Math.min(0.8 / Math.max(dx / width, dy / height), 8);
+    const translate = [width / 2 - scale * x, height / 2 - scale * y];
+
+    // アニメーションでズーム
+    svg.transition().duration(1000).call(
+        zoom.transform,
+        d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
+    );
 }
 
 // 定期実行 (10秒ごと)
 setInterval(fetchLatestEarthquake, 10000);
-fetchLatestEarthquake(); // 初回実行
+fetchLatestEarthquake();
 
 // --- アイコン描画ロジック ---
 function renderIcons(rawPoints) {
-    const svg = d3.select("#map-container");
-    svg.selectAll(".intensity-icon").remove(); // 古い震度アイコンを削除
+    const svg = d3.select("#map-container g"); // gタグ内に描画するように変更
+    svg.selectAll(".intensity-icon").remove();
 
     rawPoints.forEach(p => {
-        // 1. 自動抽出: 「市」「町」「村」「区」で文字列をカットする
         const match = p.addr.match(/^.+?[市町村区]/);
         const municipality = match ? match[0] : p.addr;
-
-        // 2. mapping.js による変換 (例外対応)
-        // AREA_MAPPINGに登録があればそちらを優先、なければ自動抽出した名前を使う
         const key = (typeof AREA_MAPPING !== 'undefined' && AREA_MAPPING[p.pref] && AREA_MAPPING[p.pref][municipality]) 
                     ? AREA_MAPPING[p.pref][municipality] 
                     : municipality;
 
-        // 3. points.json で座標を照合
         const coord = pointsData[key];
-        
         if (coord) {
             const [x, y] = projection([coord.lng, coord.lat]);
             const filename = getScaleFileName(p.scale);
-            
             if (filename) {
                 svg.append("image")
                    .attr("class", "intensity-icon")
                    .attr("href", `https://gensai-lab.github.io/eqst/assets/icons/${filename}.png`)
-                   .attr("x", x - 20) // サイズに応じて調整
+                   .attr("x", x - 20)
                    .attr("y", y - 20)
                    .attr("width", 40)
                    .attr("height", 40);
             }
-        } else {
-            console.warn(`[スキップ] 座標が見つかりません: ${p.pref} ${p.addr} (抽出: ${municipality} -> キー: ${key})`);
         }
     });
-    console.log(`震度アイコンを ${rawPoints.length} 個配置しようと試みました。`);
 }
 
 // --- 震源地アイコン描画ロジック ---
 function renderHypocenter(hypocenter) {
-    const svg = d3.select("#map-container");
+    const svg = d3.select("#map-container g"); // gタグ内に描画するように変更
     svg.selectAll(".shingen-icon").remove();
 
     const lat = hypocenter.latitude;
     const lon = hypocenter.longitude;
-
     if (typeof lat !== 'undefined' && typeof lon !== 'undefined') {
         const [x, y] = projection([lon, lat]);
-
         if (!isNaN(x) && !isNaN(y)) {
             svg.append("image")
                .attr("class", "shingen-icon")
@@ -121,7 +148,6 @@ function renderHypocenter(hypocenter) {
                .attr("y", y - 25)
                .attr("width", 50)
                .attr("height", 50);
-            console.log(`震源地を表示しました: (${lat}, ${lon})`);
         }
     }
 }
