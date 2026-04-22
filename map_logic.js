@@ -34,19 +34,28 @@ async function fetchLatestEarthquake() {
 
 // データの処理と描画
 async function processEarthquakeData(rawData) {
-    // 地図と座標の準備を待つ
+    // デバッグ用：構造を確実に見るためのログ
+    console.log("デバッグ用RawData:", rawData);
+    
     await Promise.all([mapReady, pointsReady]);
 
-    // 震度アイコンの描画 (rawData.earthquake.points があるか確認)
-    if (rawData.earthquake && rawData.earthquake.points && rawData.earthquake.points.length > 0) {
-        renderIcons(rawData.earthquake.points);
+    // 【修正箇所】pointsがどこにあるか柔軟に探す
+    // 1. 直下にあるか (rawData.points)
+    // 2. earthquakeの中にあるか (rawData.earthquake.points)
+    const points = rawData.points || (rawData.earthquake ? rawData.earthquake.points : null);
+
+    // 震度アイコンの描画
+    if (points && points.length > 0) {
+        console.log("震度情報を発見しました。アイコンを描画します。");
+        renderIcons(points);
     } else {
-        console.log("今回は震度情報(points)を含まないデータ、または震度データなしの速報です。");
+        console.log("震度情報(points)は見つかりませんでした。データ構造を確認してください。");
     }
     
-    // 震源地の描画
-    if (rawData.earthquake && rawData.earthquake.hypocenter) {
-        renderHypocenter(rawData.earthquake.hypocenter);
+    // 震源地の描画 (震源地も場所が変わっていないか念のため確認)
+    const hypocenter = rawData.earthquake ? rawData.earthquake.hypocenter : null;
+    if (hypocenter) {
+        renderHypocenter(hypocenter);
     }
 }
 
