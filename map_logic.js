@@ -22,7 +22,6 @@ window.addEventListener('message', async (event) => {
 
         // --- 重要：地図と座標データ両方の準備が整うのを待つ ---
         try {
-            // mapReady は map.html 内で定義されている Promise
             await Promise.all([mapReady, pointsReady]);
         } catch (err) {
             console.error("準備中にエラーが発生しました:", err);
@@ -30,10 +29,12 @@ window.addEventListener('message', async (event) => {
         }
 
         // 震度アイコンの描画
-        renderIcons(rawData.earthquake.points);
+        if (rawData.earthquake && rawData.earthquake.points) {
+            renderIcons(rawData.earthquake.points);
+        }
         
         // 震源地の描画
-        if (rawData.earthquake.hypocenter) {
+        if (rawData.earthquake && rawData.earthquake.hypocenter) {
             renderHypocenter(rawData.earthquake.hypocenter);
         }
     }
@@ -51,8 +52,6 @@ function renderIcons(rawPoints) {
         const regionName = (AREA_MAPPING[p.pref] && AREA_MAPPING[p.pref][p.addr]) ? 
                             AREA_MAPPING[p.pref][p.addr] : null;
 
-        console.log(`Checking: ${p.pref} ${p.addr} -> 変換結果: ${regionName}`);
-
         if (!regionName) {
             console.warn(`[NG] マッピングが見つかりません: ${p.pref} ${p.addr}`);
             return; 
@@ -62,12 +61,10 @@ function renderIcons(rawPoints) {
         const coord = pointsData[regionName];
         
         if (coord) {
-            console.log(`[OK] ${regionName} の座標発見:`, coord);
             const [x, y] = projection([coord.lng, coord.lat]);
             const filename = getScaleFileName(p.scale);
             
             if (filename) {
-                console.log(`[OK] アイコン描画: https://gensai-lab.github.io/eqst/assets/icons/${filename}.png at (${x}, ${y})`);
                 svg.append("image")
                    .attr("class", "intensity-icon")
                    .attr("href", `https://gensai-lab.github.io/eqst/assets/icons/${filename}.png`)
@@ -75,38 +72,33 @@ function renderIcons(rawPoints) {
                    .attr("y", y - 20)
                    .attr("width", 40)
                    .attr("height", 40);
-            } else {
-                console.warn(`[NG] アイコンファイル名が不明: scale=${p.scale}`);
             }
         } else {
-            console.warn(`[NG] 座標データが存在しません (points.jsonにキーがない): ${regionName}`);
+            console.warn(`[NG] 座標データが存在しません: ${regionName}`);
         }
     });
-    
-    console.log("--- アイコン描画処理終了 ---");
 }
 
-// 震源地アイコン描画ロジック（デバッグ用）
+// 震源地アイコン描画ロジック
 function renderHypocenter(hypocenter) {
     const svg = d3.select("#map-container");
     
     // 古い震源地アイコンを削除
     svg.selectAll(".shingen-icon").remove();
 
-    // ★ログ1: データの中身を確認
-    console.log("--- 震源地描画デバッグ ---");
-    console.log("受信した震源地データ:", hypocenter);
+    console.log("--- 震源地描画 ---", hypocenter);
 
-    if (!hypocenter || typeof hypocenter.lon === 'undefined' || typeof hypocenter.lat === 'undefined') {
-        console.warn("震源地データが不正です: 緯度経度が含まれていません");
+    // P2P API仕様に基づき latitude / longitude を使用
+    const lat = hypocenter.latitude;
+    const lon = hypocenter.longitude;
+
+    if (typeof lat === 'undefined' || typeof lon === 'undefined') {
+        console.warn("震源地データに緯度経度が含まれていません:", hypocenter);
         return;
     }
 
-    // 座標変換
-    const [x, y] = projection([hypocenter.lon, hypocenter.lat]);
-    
-    // ★ログ2: 変換結果を確認
-    console.log(`変換結果: 経度${hypocenter.lon}, 緯度${hypocenter.lat} -> SVG座標(x: ${x}, y: ${y})`);
+    // D3のprojectionは [経度, 緯度] の順
+    const [x, y] = projection([lon, lat]);
 
     if (!isNaN(x) && !isNaN(y)) {
         svg.append("image")
@@ -116,8 +108,8 @@ function renderHypocenter(hypocenter) {
            .attr("y", y - 25)
            .attr("width", 50)
            .attr("height", 50);
-        console.log("震源地アイコンのSVG要素を追加しました");
+        console.log(`震源地を表示しました: (${lat}, ${lon}) at (${x}, ${y})`);
     } else {
-        console.error("座標変換でNaNが発生しました。投影設定(projection)を確認してください。");
+        console.error("座標変換でNaNが発生しました:", {x, y});
     }
 }
