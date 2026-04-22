@@ -67,10 +67,10 @@ function renderIcons(rawPoints) {
             const filename = getScaleFileName(p.scale);
             
             if (filename) {
-                console.log(`[OK] アイコン描画: assets/icons/${filename}.png at (${x}, ${y})`);
+                console.log(`[OK] アイコン描画: https://gensai-lab.github.io/eqst/assets/icons/${filename}.png at (${x}, ${y})`);
                 svg.append("image")
                    .attr("class", "intensity-icon")
-                   .attr("href", `assets/icons/${filename}.png`)
+                   .attr("href", `https://gensai-lab.github.io/eqst/assets/icons/${filename}.png`)
                    .attr("x", x - 20)
                    .attr("y", y - 20)
                    .attr("width", 40)
