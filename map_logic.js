@@ -2,7 +2,7 @@
 
 let pointsData = {};
 
-// 1. ズーム機能の初期化
+// 1. ズーム機能の初期化（アニメーションなし）
 const zoom = d3.zoom()
     .scaleExtent([1, 10])
     .on("zoom", (event) => {
@@ -17,13 +17,7 @@ const pointsReady = d3.json("assets/json/points.json").then(data => {
     console.log("座標データ読み込み完了");
 });
 
-// 3. アイコンファイル名変換
-function getScaleFileName(scale) {
-    if (!scale) return null;
-    return String(scale).replace('弱', 'm').replace('強', 'p').replace('-', 'm').replace('+', 'p');
-}
-
-// 4. アイコン描画ロジック
+// 3. デバッグ用：震度アイコン描画（画像ではなく赤い丸）
 function renderIcons(points) {
     const mapContent = d3.select("#map-content");
     mapContent.selectAll(".intensity-icon").remove();
@@ -36,40 +30,42 @@ function renderIcons(points) {
                     : municipality;
 
         const coord = pointsData[key];
+        
         if (coord) {
             const [x, y] = projection([coord.lng, coord.lat]);
-            const filename = getScaleFileName(p.scale);
-            if (filename) {
-                mapContent.append("image")
-                   .attr("class", "intensity-icon")
-                   .attr("href", `https://gensai-lab.github.io/eqst/assets/icons/${filename}.png`)
-                   .attr("x", x - 15)
-                   .attr("y", y - 15)
-                   .attr("width", 30)
-                   .attr("height", 30);
-            }
+            console.log(`描画テスト: ${key} -> x:${x}, y:${y}`);
+            
+            mapContent.append("circle")
+               .attr("class", "intensity-icon")
+               .attr("cx", x)
+               .attr("cy", y)
+               .attr("r", 5)
+               .attr("fill", "red");
+        } else {
+            console.log(`座標が見つかりません: ${key}`);
         }
     });
 }
 
-// 5. 震源地描画ロジック
+// 4. デバッグ用：震源地描画（画像ではなく青い丸）
 function renderHypocenter(hypocenter) {
     const mapContent = d3.select("#map-content");
     mapContent.selectAll(".shingen-icon").remove();
 
     if (hypocenter && hypocenter.latitude && hypocenter.longitude) {
         const [x, y] = projection([hypocenter.longitude, hypocenter.latitude]);
-        mapContent.append("image")
+        console.log(`震源テスト: x:${x}, y:${y}`);
+
+        mapContent.append("circle")
            .attr("class", "shingen-icon")
-           .attr("href", "https://gensai-lab.github.io/eqst/assets/icons/shingen.png")
-           .attr("x", x - 20)
-           .attr("y", y - 20)
-           .attr("width", 40)
-           .attr("height", 40);
+           .attr("cx", x)
+           .attr("cy", y)
+           .attr("r", 10)
+           .attr("fill", "blue");
     }
 }
 
-// 6. ズーム適用（アニメーションなし）
+// 5. ズーム適用（アニメーションなし）
 function applyZoom(coords) {
     const svg = d3.select("#map-container");
     const width = 800; 
@@ -95,19 +91,19 @@ function applyZoom(coords) {
     svg.call(zoom.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
 }
 
-// 7. データ処理と実行（重要：構造を自動判定）
+// 6. データ処理と実行
 async function processEarthquakeData(rawData) {
-    await pointsReady; // データ読み込み完了を待つ
+    await pointsReady;
 
-    // ★重要：pointsがどこにあるか自動判定
+    // データ構造の自動判定
     const points = rawData.points || (rawData.earthquake ? rawData.earthquake.points : []);
     const hypocenter = rawData.hypocenter || (rawData.earthquake ? rawData.earthquake.hypocenter : null);
 
-    console.log("検知したpointsデータ:", points);
+    console.log("取得データ確認:", rawData);
 
     let pointsToFit = [];
 
-    // アイコン描画
+    // アイコン処理
     if (points.length > 0) {
         renderIcons(points);
         points.forEach(p => {
@@ -118,7 +114,7 @@ async function processEarthquakeData(rawData) {
         });
     }
     
-    // 震源地描画
+    // 震源地処理
     if (hypocenter) {
         renderHypocenter(hypocenter);
         pointsToFit.push([hypocenter.longitude, hypocenter.latitude]);
@@ -130,7 +126,7 @@ async function processEarthquakeData(rawData) {
     }
 }
 
-// 8. API取得関数
+// 7. API取得関数
 async function fetchLatestEarthquake() {
     try {
         const response = await fetch("https://api.p2pquake.net/v2/history?codes=551&limit=1");
@@ -143,6 +139,6 @@ async function fetchLatestEarthquake() {
     }
 }
 
-// 9. 最後に実行
+// 8. 実行
 setInterval(fetchLatestEarthquake, 10000);
 fetchLatestEarthquake();
