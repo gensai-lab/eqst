@@ -29,7 +29,13 @@ window.addEventListener('message', async (event) => {
             return;
         }
 
+        // 震度アイコンの描画
         renderIcons(rawData.earthquake.points);
+        
+        // 震源地の描画
+        if (rawData.earthquake.hypocenter) {
+            renderHypocenter(rawData.earthquake.hypocenter);
+        }
     }
 });
 
@@ -78,4 +84,30 @@ function renderIcons(rawPoints) {
     });
     
     console.log("--- アイコン描画処理終了 ---");
+}
+
+// 震源地アイコン描画ロジック
+function renderHypocenter(hypocenter) {
+    const svg = d3.select("#map-container");
+    
+    // 古い震源地アイコンを削除
+    svg.selectAll(".shingen-icon").remove();
+
+    // P2P APIから渡されるのは { lat: 緯度, lon: 経度 }
+    // D3のprojectionは [経度, 緯度] の順で渡す必要があるため入れ替える
+    const [x, y] = projection([hypocenter.lon, hypocenter.lat]);
+
+    if (!isNaN(x) && !isNaN(y)) {
+        console.log(`[OK] 震源地を描画: (${hypocenter.lat}, ${hypocenter.lon}) at (${x}, ${y})`);
+        
+        svg.append("image")
+           .attr("class", "shingen-icon")
+           .attr("href", "assets/icons/shingen.png")
+           .attr("x", x - 25) // アイコンサイズに合わせて調整（例：50pxなら-25）
+           .attr("y", y - 25)
+           .attr("width", 50)
+           .attr("height", 50);
+    } else {
+        console.warn(`[NG] 震源地の座標変換に失敗しました:`, hypocenter);
+    }
 }
