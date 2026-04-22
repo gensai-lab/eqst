@@ -86,28 +86,38 @@ function renderIcons(rawPoints) {
     console.log("--- アイコン描画処理終了 ---");
 }
 
-// 震源地アイコン描画ロジック
+// 震源地アイコン描画ロジック（デバッグ用）
 function renderHypocenter(hypocenter) {
     const svg = d3.select("#map-container");
     
     // 古い震源地アイコンを削除
     svg.selectAll(".shingen-icon").remove();
 
-    // P2P APIから渡されるのは { lat: 緯度, lon: 経度 }
-    // D3のprojectionは [経度, 緯度] の順で渡す必要があるため入れ替える
+    // ★ログ1: データの中身を確認
+    console.log("--- 震源地描画デバッグ ---");
+    console.log("受信した震源地データ:", hypocenter);
+
+    if (!hypocenter || typeof hypocenter.lon === 'undefined' || typeof hypocenter.lat === 'undefined') {
+        console.warn("震源地データが不正です: 緯度経度が含まれていません");
+        return;
+    }
+
+    // 座標変換
     const [x, y] = projection([hypocenter.lon, hypocenter.lat]);
+    
+    // ★ログ2: 変換結果を確認
+    console.log(`変換結果: 経度${hypocenter.lon}, 緯度${hypocenter.lat} -> SVG座標(x: ${x}, y: ${y})`);
 
     if (!isNaN(x) && !isNaN(y)) {
-        console.log(`[OK] 震源地を描画: (${hypocenter.lat}, ${hypocenter.lon}) at (${x}, ${y})`);
-        
         svg.append("image")
            .attr("class", "shingen-icon")
-           .attr("href", "https://gensai-lab.github.io/eqst/assets/icons/shingen.png")
-           .attr("x", x - 25) // アイコンサイズに合わせて調整（例：50pxなら-25）
+           .attr("href", "assets/icons/shingen.png")
+           .attr("x", x - 25)
            .attr("y", y - 25)
            .attr("width", 50)
            .attr("height", 50);
+        console.log("震源地アイコンのSVG要素を追加しました");
     } else {
-        console.warn(`[NG] 震源地の座標変換に失敗しました:`, hypocenter);
+        console.error("座標変換でNaNが発生しました。投影設定(projection)を確認してください。");
     }
 }
