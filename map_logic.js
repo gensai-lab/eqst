@@ -2,7 +2,7 @@
 
 // --- 【設定】ここでアイコンの大きさを調整できます ---
 const ICON_SIZE = 8;      // 震度アイコンのサイズ（px）
-const SHINGEN_SIZE = 10;   // 震源アイコンのサイズ（px）
+const SHINGEN_SIZE = 6;   // 震源アイコンのサイズ（px）
 // ------------------------------------------------
 
 let pointsData = {};
@@ -27,7 +27,7 @@ function getScaleFileName(scale) {
     return map[scale] || null;
 }
 
-// 4. アイコン描画（同じエリア内では最大震度のみを描画する処理）
+// 4. アイコン描画
 function renderIcons(filteredPoints) {
     const mapContent = d3.select("#map-content");
     mapContent.selectAll(".intensity-icon").remove();
@@ -73,7 +73,7 @@ function renderHypocenter(hypocenter) {
     }
 }
 
-// 6. 中央配置ズーム
+// 6. 中央配置ズーム（アニメーションなし）
 function zoomToFit(coords) {
     const svg = d3.select("#map-container");
     const width = window.innerWidth;
@@ -95,7 +95,8 @@ function zoomToFit(coords) {
     const scale = Math.min(0.7 / Math.max(dx / width, dy / height), 8);
     const translate = [width / 2 - scale * x, height / 2 - scale * y];
 
-    svg.transition().duration(1500).call(
+    // アニメーションを削除して直接適用
+    svg.call(
         zoom.transform,
         d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
     );
@@ -108,7 +109,7 @@ async function processEarthquakeData(rawData) {
     const points = rawData.points || (rawData.earthquake ? rawData.earthquake.points : []);
     const hypocenter = rawData.hypocenter || (rawData.earthquake ? rawData.earthquake.hypocenter : null);
 
-    // ★ここで同じエリアの最大震度のみを抽出する
+    // 同じエリアの最大震度のみを抽出
     const maxPoints = {};
     points.forEach(p => {
         const match = p.addr.match(/^.+?[市町村区]/);
@@ -117,7 +118,6 @@ async function processEarthquakeData(rawData) {
                     ? AREA_MAPPING[p.pref][municipality] 
                     : municipality;
         
-        // 既存の震度より大きければ更新
         if (!maxPoints[key] || p.scale > maxPoints[key].scale) {
             maxPoints[key] = p;
         }
@@ -126,7 +126,6 @@ async function processEarthquakeData(rawData) {
     const filteredPoints = Object.values(maxPoints);
     let pointsToFit = [];
 
-    // アイコン描画とズーム用座標収集
     if (filteredPoints.length > 0) {
         renderIcons(filteredPoints);
         filteredPoints.forEach(p => {
