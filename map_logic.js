@@ -27,7 +27,12 @@ function getScaleFileName(scale) {
     return map[scale] || null;
 }
 
-// 4. アイコン描画
+// 4. 深さ表記変換関数
+function formatDepth(depth) {
+    return depth === 0 ? "ごく浅い" : depth + "km";
+}
+
+// 5. アイコン描画
 function renderIcons(filteredPoints) {
     const mapContent = d3.select("#map-content");
     mapContent.selectAll(".intensity-icon").remove();
@@ -56,7 +61,7 @@ function renderIcons(filteredPoints) {
     });
 }
 
-// 5. 震源地描画
+// 6. 震源地描画
 function renderHypocenter(hypocenter) {
     const mapContent = d3.select("#map-content");
     mapContent.selectAll(".shingen-icon").remove();
@@ -73,7 +78,7 @@ function renderHypocenter(hypocenter) {
     }
 }
 
-// 6. 中央配置ズーム（アニメーションなし）
+// 7. 中央配置ズーム（アニメーションなし）
 function zoomToFit(coords) {
     const svg = d3.select("#map-container");
     const width = window.innerWidth;
@@ -95,20 +100,22 @@ function zoomToFit(coords) {
     const scale = Math.min(0.7 / Math.max(dx / width, dy / height), 8);
     const translate = [width / 2 - scale * x, height / 2 - scale * y];
 
-    // アニメーションを削除して直接適用
     svg.call(
         zoom.transform,
         d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
     );
 }
 
-// 7. データ処理
+// 8. データ処理
 async function processEarthquakeData(rawData) {
     await pointsReady;
 
     const points = rawData.points || (rawData.earthquake ? rawData.earthquake.points : []);
     const hypocenter = rawData.hypocenter || (rawData.earthquake ? rawData.earthquake.hypocenter : null);
 
+    // ★ここで深さの表示用処理を呼ぶことができます
+    // 例: const depthText = formatDepth(hypocenter.depth);
+    
     // 同じエリアの最大震度のみを抽出
     const maxPoints = {};
     points.forEach(p => {
@@ -146,7 +153,7 @@ async function processEarthquakeData(rawData) {
     }
 }
 
-// 8. API取得と実行
+// 9. API取得と実行
 async function fetchLatestEarthquake() {
     try {
         const response = await fetch("https://api.p2pquake.net/v2/history?codes=551&limit=1");
