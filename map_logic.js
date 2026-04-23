@@ -1,79 +1,166 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>Map Viewer</title>
-    <style>
-        body { margin: 0; padding: 0; overflow: hidden; background-color: #0d1a3a; }
-        #map-container { width: 100vw; height: 100vh; cursor: grab; }
-        
-        /* 都道府県：塗りつぶしなし、白の枠線のみ */
-        .pref-layer { 
-            fill: none; 
-            stroke: #94a3b3; 
-            stroke-width: 0.1px; 
-            pointer-events: none;
+// map_logic.js
+
+// --- 【設定】ここでアイコンの大きさを調整できます ---
+const ICON_SIZE = 8;      // 震度アイコンのサイズ（px）
+const SHINGEN_SIZE = 8;   // 震源アイコンのサイズ（px）
+// ------------------------------------------------
+
+let pointsData = {};
+
+// 1. ズーム機能の初期化
+const zoom = d3.zoom()
+    .scaleExtent([1, 10])
+    .on("zoom", (event) => {
+        d3.select("#map-content").attr("transform", event.transform);
+    });
+
+d3.select("#map-container").call(zoom);
+
+// 2. 座標データ(points.json)読み込み
+const pointsReady = d3.json("assets/json/points.json").then(data => {
+    pointsData = data;
+});
+
+// 3. 震度アイコンのファイル名変換
+function getScaleFileName(scale) {
+    const map = { 10: '1', 20: '2', 30: '3', 40: '4', 45: '5m', 50: '5p', 55: '6m', 60: '6p', 70: '7' };
+    return map[scale] || null;
+}
+
+// 4. 深さ表記変換関数
+function formatDepth(depth) {
+    return depth === 0 ? "ごく浅い" : depth + "km";
+}
+
+// 5. アイコン描画
+function renderIcons(filteredPoints) {
+    // #icon-layer に描画することで常に地図の手前に表示
+    const iconLayer = d3.select("#icon-layer");
+    iconLayer.selectAll(".intensity-icon").remove();
+
+    filteredPoints.forEach(p => {
+        const match = p.addr.match(/^.+?[市町村区]/);
+        const municipality = match ? match[0] : p.addr;
+        const key = (typeof AREA_MAPPING !== 'undefined' && AREA_MAPPING[p.pref] && AREA_MAPPING[p.pref][municipality]) 
+                    ? AREA_MAPPING[p.pref][municipality] 
+                    : municipality;
+
+        const coord = pointsData[key];
+        if (coord) {
+            const [x, y] = window.projection([coord.lng, coord.lat]);
+            const filename = getScaleFileName(p.scale);
+            if (filename) {
+                iconLayer.append("image")
+                     .attr("class", "intensity-icon")
+                     .attr("href", `https://gensai-lab.github.io/eqst/assets/icons/${filename}.png`)
+                     .attr("x", x - (ICON_SIZE / 2))
+                     .attr("y", y - (ICON_SIZE / 2))
+                     .attr("width", ICON_SIZE)
+                     .attr("height", ICON_SIZE);
+            }
         }
+    });
+}
+
+// 6. 震源地描画
+function renderHypocenter(hypocenter) {
+    // #icon-layer に描画することで常に地図の手前に表示
+    const iconLayer = d3.select("#icon-layer");
+    iconLayer.selectAll(".shingen-icon").remove();
+
+    if (hypocenter && hypocenter.latitude && hypocenter.longitude) {
+        const [x, y] = window.projection([hypocenter.longitude, hypocenter.latitude]);
+        iconLayer.append("image")
+           .attr("class", "shingen-icon")
+           .attr("href", "https://gensai-lab.github.io/eqst/assets/icons/shingen.png")
+           .attr("x", x - (SHINGEN_SIZE / 2))
+           .attr("y", y - (SHINGEN_SIZE / 2))
+           .attr("width", SHINGEN_SIZE)
+           .attr("height", SHINGEN_SIZE);
+    }
+}
+
+// 7. 中央配置ズーム
+function zoomToFit(coords) {
+    const svg = d3.select("#map-container");
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    const minLng = d3.min(coords, d => d[0]);
+    const maxLng = d3.max(coords, d => d[0]);
+    const minLat = d3.min(coords, d => d[1]);
+    const maxLat = d3.max(coords, d => d[1]);
+
+    const p1 = window.projection([minLng, maxLat]);
+    const p2 = window.projection([maxLng, minLat]);
+
+    const dx = p2[0] - p1[0];
+    const dy = p2[1] - p1[1];
+    const x = (p1[0] + p2[0]) / 2;
+    const y = (p1[1] + p2[1]) / 2;
+    
+    const scale = Math.min(0.7 / Math.max(dx / width, dy / height), 8);
+    const translate = [width / 2 - scale * x, height / 2 - scale * y];
+
+    svg.call(
+        zoom.transform,
+        d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
+    );
+}
+
+// 8. データ処理
+async function processEarthquakeData(rawData) {
+    await pointsReady;
+
+    const points = rawData.points || (rawData.earthquake ? rawData.earthquake.points : []);
+    const hypocenter = rawData.hypocenter || (rawData.earthquake ? rawData.earthquake.hypocenter : null);
+    
+    const maxPoints = {};
+    points.forEach(p => {
+        const match = p.addr.match(/^.+?[市町村区]/);
+        const municipality = match ? match[0] : p.addr;
+        const key = (typeof AREA_MAPPING !== 'undefined' && AREA_MAPPING[p.pref] && AREA_MAPPING[p.pref][municipality]) ? AREA_MAPPING[p.pref][municipality] : municipality;
         
-        /* 細分地域：塗りつぶしあり、指定の枠線色 */
-        .saibun-layer { 
-            fill: #203045; 
-            stroke: #4b5f73; 
-            stroke-width: 0.2px; 
-            pointer-events: none; 
+        if (!maxPoints[key] || p.scale > maxPoints[key].scale) {
+            maxPoints[key] = p;
         }
-        
-        /* アイコンがズーム操作の邪魔にならないように */
-        .intensity-icon, .shingen-icon { pointer-events: none; }
-    </style>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://unpkg.com/topojson@3"></script>
-</head>
-<body>
-    <svg id="map-container">
-        <g id="map-content">
-            <g id="map-layer"></g>
-            <g id="icon-layer"></g>
-        </g>
-    </svg>
+    });
 
-    <script>
-        // グローバル変数として定義
-        window.projection = d3.geoMercator().center([137, 36]).scale(2000).translate([window.innerWidth/2, window.innerHeight/2]);
-        const path = d3.geoPath().projection(window.projection);
-        const mapLayer = d3.select("#map-layer");
+    const filteredPoints = Object.values(maxPoints);
+    let pointsToFit = [];
 
-        // 地図ファイルの読み込みと描画
-        Promise.all([
-            d3.json("assets/json/todoufuken.json"),
-            d3.json("assets/json/saibun.json")
-        ]).then(([prefData, saibunData]) => {
-            const prefKey = Object.keys(prefData.objects)[0];
-            const saibunKey = Object.keys(saibunData.objects)[0];
-
-            // 1. 細分地域を描画
-            mapLayer.append("g")
-                .selectAll("path")
-                .data(topojson.feature(saibunData, saibunData.objects[saibunKey]).features)
-                .enter()
-                .append("path")
-                .attr("d", path)
-                .attr("class", "saibun-layer");
-
-            // 2. 都道府県を描画
-            mapLayer.append("g")
-                .selectAll("path")
-                .data(topojson.feature(prefData, prefData.objects[prefKey]).features)
-                .enter()
-                .append("path")
-                .attr("d", path)
-                .attr("class", "pref-layer");
-            
-            console.log("地図の描画順を最適化しました。");
+    if (filteredPoints.length > 0) {
+        renderIcons(filteredPoints);
+        filteredPoints.forEach(p => {
+             const match = p.addr.match(/^.+?[市町村区]/);
+             const municipality = match ? match[0] : p.addr;
+             const key = (typeof AREA_MAPPING !== 'undefined' && AREA_MAPPING[p.pref] && AREA_MAPPING[p.pref][municipality]) ? AREA_MAPPING[p.pref][municipality] : municipality;
+             if (pointsData[key]) pointsToFit.push([pointsData[key].lng, pointsData[key].lat]);
         });
-    </script>
+    }
+    
+    if (hypocenter) {
+        renderHypocenter(hypocenter);
+        pointsToFit.push([hypocenter.longitude, hypocenter.latitude]);
+    }
 
-    <script src="assets/json/mapping.js"></script>
-    <script src="map_logic.js"></script>
-</body>
-</html>
+    if (pointsToFit.length > 0) {
+        zoomToFit(pointsToFit);
+    }
+}
+
+// 9. API取得と実行
+async function fetchLatestEarthquake() {
+    try {
+        const response = await fetch("https://api.p2pquake.net/v2/history?codes=551&limit=1");
+        const data = await response.json();
+        if (data && data.length > 0) {
+            processEarthquakeData(data[0]);
+        }
+    } catch (err) {
+        console.error("APIエラー:", err);
+    }
+}
+
+setInterval(fetchLatestEarthquake, 10000);
+fetchLatestEarthquake();
