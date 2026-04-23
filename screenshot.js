@@ -4,45 +4,44 @@ const fs = require('fs');
 (async () => {
   const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const page = await browser.newPage();
+  
+  // ★追加：Webページ内のエラーやログを、Actionsのログに出力する
+  page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+  page.on('pageerror', err => console.log('PAGE ERROR:', err.toString()));
+  page.on('requestfailed', req => console.log('REQ FAILED:', req.url(), req.failure().errorText));
+
   await page.setViewport({ width: 1280, height: 720 });
 
-  await page.goto('https://gensai-lab.github.io/eqst/', { waitUntil: 'networkidle0' });
-  await page.waitForSelector('#map-content');
-  await new Promise(r => setTimeout(r, 3000)); // 描画待機
+  try {
+    console.log("Navigating to page...");
+    // タイムアウトを少し長めに設定(60秒)
+    await page.goto('https://gensai-lab.github.io/eqst/', { waitUntil: 'networkidle0', timeout: 60000 });
+    console.log("Navigation complete.");
 
-  // 1. データの取得（画面上の要素から文字列を取得）
-  const hypoName = await page.$eval('#hypo-val', el => el.innerText.trim());
-  
-  // 震度画像からファイル名を取得し、震度に変換する簡単なロジック
-  const intensity = await page.$eval('#max-scale-container img', img => {
-      const src = img.src;
-      if (src.includes('7.png')) return '震度7';
-      if (src.includes('6p.png')) return '震度6強';
-      if (src.includes('6m.png')) return '震度6弱';
-      if (src.includes('5p.png')) return '震度5強';
-      if (src.includes('5m.png')) return '震度5弱';
-      if (src.includes('4.png')) return '震度4';
-      if (src.includes('3.png')) return '震度3';
-      if (src.includes('2.png')) return '震度2';
-      if (src.includes('1.png')) return '震度1';
-      return '震度不明';
-  }).catch(() => '震度なし');
+    console.log("Waiting for selector...");
+    await page.waitForSelector('#map-content', { timeout: 30000 });
+    console.log("Selector found!");
 
-  // 2. 日時の取得（ファイル名用）
-  const now = new Date();
-  const timestamp = now.getFullYear() + 
-    ('0' + (now.getMonth()+1)).slice(-2) + 
-    ('0' + now.getDate()).slice(-2) + 
-    ('0' + now.getHours()).slice(-2) + 
-    ('0' + now.getMinutes()).slice(-2);
+    // データの取得と保存処理
+    const hypoName = await page.$eval('#hypo-val', el => el.innerText.trim()).catch(() => '不明');
+    const intensity = await page.$eval('#max-scale-container img', img => img.src).catch(() => 'なし');
+    
+    // (中略: 保存ファイル名の生成ロジックは以前のものを使用してください)
+    const now = new Date();
+    const timestamp = now.getFullYear() + ('0' + (now.getMonth()+1)).slice(-2) + ('0' + now.getDate()).slice(-2) + ('0' + now.getHours()).slice(-2) + ('0' + now.getMinutes()).slice(-2);
+    
+    const dir = 'screenshots';
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+    const fileName = `${timestamp}_${hypoName}_${intensity.split('/').pop().split('.')[0]}.png`;
+    
+    await page.screenshot({ path: `${dir}/${fileName}` });
+    console.log(`Saved: ${dir}/${fileName}`);
 
-  // 3. 保存先の作成と保存
-  const dir = 'screenshots';
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir);
-  
-  const fileName = `${timestamp}_${hypoName}_${intensity}.png`;
-  await page.screenshot({ path: `${dir}/${fileName}` });
-  
-  console.log(`Saved: ${dir}/${fileName}`);
+  } catch (e) {
+    console.error("DEBUG: Failed to take screenshot. Taking full-page debug screenshot...");
+    await page.screenshot({ path: 'debug-error.png' }); // エラー時の全画面保存
+    throw e; // エラー終了させる
+  }
+
   await browser.close();
 })();
