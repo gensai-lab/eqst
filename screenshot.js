@@ -8,15 +8,16 @@ const fs = require('fs');
 
   await page.goto('https://gensai-lab.github.io/eqst/template.html', { waitUntil: 'networkidle0' });
 
-  // 日時取得
+  // 日本時間(JST)で日時を取得
   const now = new Date();
-  const timestamp = now.getFullYear() + 
-    ('0'+(now.getMonth()+1)).slice(-2) + 
-    ('0'+now.getDate()).slice(-2) + 
-    ('0'+now.getHours()).slice(-2) + 
-    ('0'+now.getMinutes()).slice(-2);
+  const jstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+  
+  const timestamp = jstTime.getFullYear() + 
+    ('0' + (jstTime.getMonth() + 1)).slice(-2) + 
+    ('0' + jstTime.getDate()).slice(-2) + 
+    ('0' + jstTime.getHours()).slice(-2) + 
+    ('0' + jstTime.getMinutes()).slice(-2);
 
-  // ★ファイル名を「yyyyMMddHHmm.png」に変更
   const fileName = `screenshots/${timestamp}.png`;
   
   await page.screenshot({ path: fileName, fullPage: true });
