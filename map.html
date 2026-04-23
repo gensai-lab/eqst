@@ -7,18 +7,23 @@
         body { margin: 0; padding: 0; overflow: hidden; background-color: #0d1a3a; }
         #map-container { width: 100vw; height: 100vh; cursor: grab; }
         
+        /* 都道府県：塗りつぶしなし、白の枠線のみ */
         .pref-layer { 
             fill: none; 
             stroke: #94a3b3; 
             stroke-width: 0.1px; 
             pointer-events: none;
         }
+        
+        /* 細分地域：塗りつぶしあり、指定の枠線色 */
         .saibun-layer { 
             fill: #203045; 
             stroke: #4b5f73; 
             stroke-width: 0.2px; 
             pointer-events: none; 
         }
+        
+        /* アイコンがズーム操作の邪魔にならないように */
         .intensity-icon, .shingen-icon { pointer-events: none; }
     </style>
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -26,15 +31,16 @@
 </head>
 <body>
     <svg id="map-container">
-        <g id="map-layer"></g>
-        <g id="icon-layer"></g>
+        <g id="map-content">
+            <g id="map-layer"></g>
+            <g id="icon-layer"></g>
+        </g>
     </svg>
 
     <script>
+        // グローバル変数として定義
         window.projection = d3.geoMercator().center([137, 36]).scale(2000).translate([window.innerWidth/2, window.innerHeight/2]);
         const path = d3.geoPath().projection(window.projection);
-        
-        // 地図レイヤーを選択
         const mapLayer = d3.select("#map-layer");
 
         // 地図ファイルの読み込みと描画
@@ -63,7 +69,7 @@
                 .attr("d", path)
                 .attr("class", "pref-layer");
             
-            console.log("地図の描画順を固定しました。");
+            console.log("地図の描画順を最適化しました。");
         });
     </script>
 
