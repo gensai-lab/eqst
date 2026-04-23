@@ -1,5 +1,7 @@
 name: Take Map Screenshot
+
 on:
+  # 手動実行用（GASから呼ぶために必要）
   workflow_dispatch:
 
 jobs:
@@ -15,7 +17,9 @@ jobs:
       - run: |
           sudo apt-get update
           sudo apt-get install -y libgbm-dev libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxcomposite1 libxdamage1 libxrandr2 libxkbcommon0 libasound2t64 libpangocairo-1.0-0 libxshmfence1
+      # 撮影実行
       - run: node screenshot.js
+      # 画像保存
       - name: Commit and push
         run: |
           git config --global user.name 'github-actions[bot]'
