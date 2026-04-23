@@ -20,7 +20,10 @@ function renderUI(eq) {
     document.getElementById('time-val').innerHTML = formatDate(e.time);
     document.getElementById('mag-val').innerText = `M${e.hypocenter.magnitude.toFixed(1)}`;
     document.getElementById('hypo-val').innerText = e.hypocenter.name;
-    document.getElementById('depth-val').innerText = `${e.hypocenter.depth}km`;
+    
+    // 【修正箇所】深さが0kmの場合は「ごく浅い」と表示する処理
+    const depthVal = e.hypocenter.depth;
+    document.getElementById('depth-val').innerText = (depthVal === 0) ? "ごく浅い" : `${depthVal}km`;
 
     // 震度アイコン
     const scaleContainer = document.getElementById('max-scale-container');
