@@ -13,12 +13,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24' # 警告を消すために24に変更
+          node-version: '24'
 
       - name: Install dependencies
-        run: npm install puppeteer
+        run: npm ci
 
-      # ★ここを追加：Puppeteer(Chromium)に必要なライブラリをインストール
+      # ★修正：パッケージ名を新しい環境用に変更
       - name: Install Puppeteer dependencies
         run: |
           sudo apt-get update
@@ -33,12 +33,14 @@ jobs:
             libxdamage1 \
             libxrandr2 \
             libxkbcommon0 \
-            libasound2 \
+            libasound2t64 \
             libpangocairo-1.0-0 \
             libxshmfence1
 
       - name: Run screenshot script
         run: node screenshot.js
+        env:
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'false'
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
