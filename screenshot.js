@@ -8,10 +8,6 @@ const fs = require('fs');
 
   await page.goto('https://gensai-lab.github.io/eqst/template.html', { waitUntil: 'networkidle0' });
 
-  // ★重要：ここで各要素のIDを指定（template.htmlに合わせて書き換えてください）
-  const hypo = await page.$eval('#hypo-id', el => el.innerText.trim()).catch(() => '震源不明');
-  const shindo = await page.$eval('#shindo-id', el => el.innerText.trim()).catch(() => '震度不明');
-
   // 日時取得
   const now = new Date();
   const timestamp = now.getFullYear() + 
@@ -20,8 +16,8 @@ const fs = require('fs');
     ('0'+now.getHours()).slice(-2) + 
     ('0'+now.getMinutes()).slice(-2);
 
-  // ファイル名を生成
-  const fileName = `screenshots/${timestamp}_${hypo}_${shindo}.png`;
+  // ★ファイル名を「yyyyMMddHHmm.png」に変更
+  const fileName = `screenshots/${timestamp}.png`;
   
   await page.screenshot({ path: fileName, fullPage: true });
   console.log(`Saved: ${fileName}`);
