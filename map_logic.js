@@ -27,12 +27,12 @@ function getScaleFileName(scale) {
     return map[scale] || null;
 }
 
-// 4. アイコン描画
-function renderIcons(points) {
+// 4. アイコン描画（同じエリア内では最大震度のみを描画する処理）
+function renderIcons(filteredPoints) {
     const mapContent = d3.select("#map-content");
     mapContent.selectAll(".intensity-icon").remove();
 
-    points.forEach(p => {
+    filteredPoints.forEach(p => {
         const match = p.addr.match(/^.+?[市町村区]/);
         const municipality = match ? match[0] : p.addr;
         const key = (typeof AREA_MAPPING !== 'undefined' && AREA_MAPPING[p.pref] && AREA_MAPPING[p.pref][municipality]) 
@@ -47,7 +47,7 @@ function renderIcons(points) {
                 mapContent.append("image")
                    .attr("class", "intensity-icon")
                    .attr("href", `https://gensai-lab.github.io/eqst/assets/icons/${filename}.png`)
-                   .attr("x", x - (ICON_SIZE / 2)) // サイズの半分を引く
+                   .attr("x", x - (ICON_SIZE / 2))
                    .attr("y", y - (ICON_SIZE / 2))
                    .attr("width", ICON_SIZE)
                    .attr("height", ICON_SIZE);
@@ -66,7 +66,7 @@ function renderHypocenter(hypocenter) {
         mapContent.append("image")
            .attr("class", "shingen-icon")
            .attr("href", "https://gensai-lab.github.io/eqst/assets/icons/shingen.png")
-           .attr("x", x - (SHINGEN_SIZE / 2)) // サイズの半分を引く
+           .attr("x", x - (SHINGEN_SIZE / 2))
            .attr("y", y - (SHINGEN_SIZE / 2))
            .attr("width", SHINGEN_SIZE)
            .attr("height", SHINGEN_SIZE);
@@ -108,11 +108,28 @@ async function processEarthquakeData(rawData) {
     const points = rawData.points || (rawData.earthquake ? rawData.earthquake.points : []);
     const hypocenter = rawData.hypocenter || (rawData.earthquake ? rawData.earthquake.hypocenter : null);
 
+    // ★ここで同じエリアの最大震度のみを抽出する
+    const maxPoints = {};
+    points.forEach(p => {
+        const match = p.addr.match(/^.+?[市町村区]/);
+        const municipality = match ? match[0] : p.addr;
+        const key = (typeof AREA_MAPPING !== 'undefined' && AREA_MAPPING[p.pref] && AREA_MAPPING[p.pref][municipality]) 
+                    ? AREA_MAPPING[p.pref][municipality] 
+                    : municipality;
+        
+        // 既存の震度より大きければ更新
+        if (!maxPoints[key] || p.scale > maxPoints[key].scale) {
+            maxPoints[key] = p;
+        }
+    });
+
+    const filteredPoints = Object.values(maxPoints);
     let pointsToFit = [];
 
-    if (points.length > 0) {
-        renderIcons(points);
-        points.forEach(p => {
+    // アイコン描画とズーム用座標収集
+    if (filteredPoints.length > 0) {
+        renderIcons(filteredPoints);
+        filteredPoints.forEach(p => {
              const match = p.addr.match(/^.+?[市町村区]/);
              const municipality = match ? match[0] : p.addr;
              const key = (typeof AREA_MAPPING !== 'undefined' && AREA_MAPPING[p.pref] && AREA_MAPPING[p.pref][municipality]) ? AREA_MAPPING[p.pref][municipality] : municipality;
