@@ -1,8 +1,11 @@
 name: Take Map Screenshot
 
 on:
-  # 手動実行用（GASから呼ぶために必要）
   workflow_dispatch:
+    inputs:
+      message:
+        description: 'Discordに送信する地震情報メッセージ'
+        required: true
 
 jobs:
   screenshot:
@@ -17,8 +20,10 @@ jobs:
       - run: |
           sudo apt-get update
           sudo apt-get install -y libgbm-dev libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxcomposite1 libxdamage1 libxrandr2 libxkbcommon0 libasound2t64 libpangocairo-1.0-0 libxshmfence1
+      
       # 撮影実行
       - run: node screenshot.js
+      
       # 画像保存
       - name: Commit and push
         run: |
@@ -27,16 +32,17 @@ jobs:
           git add screenshots/
           git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-screenshot" && git push)
 
-# Discordへの通知ステップ
+      # Discordへの通知ステップ
       - name: Send Discord Notification
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          # 最新の画像を特定
           IMAGE_FILE=$(ls -t screenshots/*.png | head -n1)
+          # GitHub Actionsのinputからメッセージを取得
+          MESSAGE="${{ github.event.inputs.message }}"
           
-          # Discordに投稿（curlコマンドで送信）
+          # Discordに投稿
           curl -H "Content-Type: multipart/form-data" \
-          -F "content=【地震速報】新しい地震情報を検知しました。シミュレーション画像を生成しました。" \
+          -F "content=$MESSAGE" \
           -F "file1=@$IMAGE_FILE" \
           $DISCORD_WEBHOOK
