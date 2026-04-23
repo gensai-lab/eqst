@@ -6,8 +6,23 @@
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background-color: #0d1a3a; }
         #map-container { width: 100vw; height: 100vh; cursor: grab; }
-        .pref-layer { fill: #2c3e50; stroke: #ffffff; stroke-width: 0.5px; }
-        .saibun-layer { fill: none; stroke: #4b5f73; stroke-width: 0.3px; pointer-events: none; }
+        
+        /* 都道府県：塗りつぶしなし、白の枠線のみ */
+        .pref-layer { 
+            fill: none; 
+            stroke: #ffffff; 
+            stroke-width: 0.6px; 
+            pointer-events: none;
+        }
+        
+        /* 細分地域：塗りつぶしあり、指定の枠線色 */
+        .saibun-layer { 
+            fill: #203045; 
+            stroke: #4b5f73; 
+            stroke-width: 0.3px; 
+            pointer-events: none; 
+        }
+        
         /* アイコンがズーム操作の邪魔にならないように */
         .intensity-icon, .shingen-icon { pointer-events: none; }
     </style>
@@ -20,7 +35,7 @@
     </svg>
 
     <script>
-        // グローバル変数として定義 (map_logic.jsから参照するため)
+        // グローバル変数として定義
         window.projection = d3.geoMercator().center([137, 36]).scale(2000).translate([window.innerWidth/2, window.innerHeight/2]);
         const path = d3.geoPath().projection(window.projection);
         const mapContent = d3.select("#map-content");
@@ -33,10 +48,25 @@
             const prefKey = Object.keys(prefData.objects)[0];
             const saibunKey = Object.keys(saibunData.objects)[0];
 
-            mapContent.append("g").selectAll("path").data(topojson.feature(prefData, prefData.objects[prefKey]).features).enter().append("path").attr("d", path).attr("class", "pref-layer");
-            mapContent.append("g").selectAll("path").data(topojson.feature(saibunData, saibunData.objects[saibunKey]).features).enter().append("path").attr("d", path).attr("class", "saibun-layer");
+            // 1. 細分地域を先に描画（奥にする）
+            mapContent.append("g")
+                .selectAll("path")
+                .data(topojson.feature(saibunData, saibunData.objects[saibunKey]).features)
+                .enter()
+                .append("path")
+                .attr("d", path)
+                .attr("class", "saibun-layer");
+
+            // 2. 都道府県を後に描画（手前にする）
+            mapContent.append("g")
+                .selectAll("path")
+                .data(topojson.feature(prefData, prefData.objects[prefKey]).features)
+                .enter()
+                .append("path")
+                .attr("d", path)
+                .attr("class", "pref-layer");
             
-            console.log("地図の基本描画が完了しました。");
+            console.log("地図の描画順を最適化しました。");
         });
     </script>
 
