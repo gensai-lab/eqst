@@ -1,8 +1,8 @@
 // map_logic.js
 
 // --- 【設定】ここでアイコンの大きさを調整できます ---
-const ICON_SIZE = 8;      // 震度アイコンのサイズ（px）
-const SHINGEN_SIZE = 8;   // 震源アイコンのサイズ（px）
+const ICON_SIZE = 6;      // 震度アイコンのサイズ（px）
+const SHINGEN_SIZE = 5;   // 震源アイコンのサイズ（px）
 // ------------------------------------------------
 
 let pointsData = {};
