@@ -7,11 +7,12 @@ const MUNICIPALITY_FIXES = {
 
 // 共通：住所から正しい市町村キーを抽出する関数
 function getSafeCityKey(addr) {
-    // 正規表現：都道府県をスキップし、市町村名を取得
     const match = addr.match(/(?:[都道府県])([^市区町村]+[市区町村])/);
     let name = match ? match[1] : addr;
 
-    // リストに定義されていればそちらを優先
+    // --- デバッグ用出力 ---
+    console.log("変換前:", addr, " -> 変換後:", name);
+
     if (MUNICIPALITY_FIXES[name]) {
         return MUNICIPALITY_FIXES[name];
     }
