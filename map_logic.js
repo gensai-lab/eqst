@@ -1,28 +1,25 @@
 // map_logic.js
 
-// --- 【設定】変換リスト（うまく表示されない場合はここに追加してください） ---
-// ここに登録した名称は、自動抽出結果よりも優先されます。
+// --- 【設定】変換リスト ---
 const MUNICIPALITY_FIXES = {
     "大町": "大町市"
 };
 
+// 基準サイズ（ここで見た目の大きさを調整してください）
+const BASE_ICON_SIZE = 10;
+const BASE_SHINGEN_SIZE = 12;
+
 // 共通：住所から正しい市町村キーを抽出する関数
 function getSafeCityKey(addr) {
-    // 1. 先頭から最初に出てくる「市・区・町・村」までを抽出する
-    // 「.+?」は最短一致で、最初に出現した市町村区でストップします
     const match = addr.match(/^.+?[市区町村]/);
     let name = match ? match[0] : addr;
 
-    // 2. リストに定義されていればそちらを優先（修正リスト）
     if (MUNICIPALITY_FIXES[name]) {
         return MUNICIPALITY_FIXES[name];
     }
     return name;
 }
 
-// ------------------------------------------------
-const ICON_SIZE = 7;      // 震度アイコンのサイズ（px）
-const SHINGEN_SIZE = 8;   // 震源アイコンのサイズ（px）
 // ------------------------------------------------
 
 let pointsData = {};
@@ -31,7 +28,26 @@ let pointsData = {};
 const zoom = d3.zoom()
     .scaleExtent([1, 10])
     .on("zoom", (event) => {
-        d3.select("#map-content").attr("transform", event.transform);
+        const transform = event.transform;
+        d3.select("#map-content").attr("transform", transform);
+
+        // 拡大率に応じてアイコンサイズを調整（逆補正）
+        // 拡大しても見た目のサイズがBASE_ICON_SIZEを維持するように計算
+        const k = transform.k;
+        const currentIconSize = BASE_ICON_SIZE / Math.sqrt(k);
+        const currentShingenSize = BASE_SHINGEN_SIZE / Math.sqrt(k);
+
+        d3.selectAll(".intensity-icon")
+            .attr("width", currentIconSize)
+            .attr("height", currentIconSize)
+            .attr("x", function() { return d3.select(this).attr("data-cx") - (currentIconSize / 2); })
+            .attr("y", function() { return d3.select(this).attr("data-cy") - (currentIconSize / 2); });
+
+        d3.selectAll(".shingen-icon")
+            .attr("width", currentShingenSize)
+            .attr("height", currentShingenSize)
+            .attr("x", function() { return d3.select(this).attr("data-cx") - (currentShingenSize / 2); })
+            .attr("y", function() { return d3.select(this).attr("data-cy") - (currentShingenSize / 2); });
     });
 
 d3.select("#map-container").call(zoom);
@@ -59,7 +75,6 @@ function renderIcons(filteredPoints) {
 
     filteredPoints.forEach(p => {
         const municipality = getSafeCityKey(p.addr);
-        // マッピングリスト（AREA_MAPPING）との照合
         const key = (typeof AREA_MAPPING !== 'undefined' && AREA_MAPPING[p.pref] && AREA_MAPPING[p.pref][municipality]) 
                     ? AREA_MAPPING[p.pref][municipality] 
                     : municipality;
@@ -72,13 +87,14 @@ function renderIcons(filteredPoints) {
                 iconLayer.append("image")
                      .attr("class", "intensity-icon")
                      .attr("href", `https://gensai-lab.github.io/eqst/assets/icons/${filename}.png`)
-                     .attr("x", x - (ICON_SIZE / 2))
-                     .attr("y", y - (ICON_SIZE / 2))
-                     .attr("width", ICON_SIZE)
-                     .attr("height", ICON_SIZE);
+                     // 中心座標をカスタム属性として保持
+                     .attr("data-cx", x)
+                     .attr("data-cy", y)
+                     .attr("x", x - (BASE_ICON_SIZE / 2))
+                     .attr("y", y - (BASE_ICON_SIZE / 2))
+                     .attr("width", BASE_ICON_SIZE)
+                     .attr("height", BASE_ICON_SIZE);
             }
-        } else {
-            console.warn("未登録地点:", municipality);
         }
     });
 }
@@ -93,10 +109,13 @@ function renderHypocenter(hypocenter) {
         iconLayer.append("image")
            .attr("class", "shingen-icon")
            .attr("href", "https://gensai-lab.github.io/eqst/assets/icons/shingen.png")
-           .attr("x", x - (SHINGEN_SIZE / 2))
-           .attr("y", y - (SHINGEN_SIZE / 2))
-           .attr("width", SHINGEN_SIZE)
-           .attr("height", SHINGEN_SIZE);
+           // 中心座標をカスタム属性として保持
+           .attr("data-cx", x)
+           .attr("data-cy", y)
+           .attr("x", x - (BASE_SHINGEN_SIZE / 2))
+           .attr("y", y - (BASE_SHINGEN_SIZE / 2))
+           .attr("width", BASE_SHINGEN_SIZE)
+           .attr("height", BASE_SHINGEN_SIZE);
     }
 }
 
