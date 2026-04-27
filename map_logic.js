@@ -1,18 +1,21 @@
 // map_logic.js
 
 // --- 【設定】変換リスト（うまく表示されない場合はここに追加してください） ---
+// ここに登録した名称は、自動抽出結果よりも優先されます。
 const MUNICIPALITY_FIXES = {
-    "大町": "大町市",
+    "長野池田町": "池田町",
+    "長野市信州新町": "長野市", // 必要に応じて調整
+    "安曇野市穂高": "安曇野市"
 };
 
 // 共通：住所から正しい市町村キーを抽出する関数
 function getSafeCityKey(addr) {
-    const match = addr.match(/(?:[都道府県])([^市区町村]+[市区町村])/);
-    let name = match ? match[1] : addr;
+    // 1. 先頭から最初に出てくる「市・区・町・村」までを抽出する
+    // 「.+?」は最短一致で、最初に出現した市町村区でストップします
+    const match = addr.match(/^.+?[市区町村]/);
+    let name = match ? match[0] : addr;
 
-    // --- デバッグ用出力 ---
-    console.log("変換前:", addr, " -> 変換後:", name);
-
+    // 2. リストに定義されていればそちらを優先（修正リスト）
     if (MUNICIPALITY_FIXES[name]) {
         return MUNICIPALITY_FIXES[name];
     }
@@ -58,6 +61,7 @@ function renderIcons(filteredPoints) {
 
     filteredPoints.forEach(p => {
         const municipality = getSafeCityKey(p.addr);
+        // マッピングリスト（AREA_MAPPING）との照合
         const key = (typeof AREA_MAPPING !== 'undefined' && AREA_MAPPING[p.pref] && AREA_MAPPING[p.pref][municipality]) 
                     ? AREA_MAPPING[p.pref][municipality] 
                     : municipality;
@@ -75,6 +79,8 @@ function renderIcons(filteredPoints) {
                      .attr("width", ICON_SIZE)
                      .attr("height", ICON_SIZE);
             }
+        } else {
+            console.warn("未登録地点:", municipality);
         }
     });
 }
