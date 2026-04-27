@@ -15,7 +15,16 @@ html, body { width: 100vw; height: 100vh; overflow: hidden; background-color: #1
 
 #time-val { top: -0.2%; left: 35%; }
 #mag-val  { top: -0.2%; left: 66.5%; }
-#hypo-val { top: 5.8%; left: 35%; }
+
+#hypo-val { 
+    top: 5.8%; 
+    left: 35%; 
+    max-width: 28%;           /* 震源地名が長すぎる場合に隣と被らないよう制限 */
+    white-space: nowrap;      /* 改行を禁止 */
+    overflow: hidden;         /* はみ出した分を隠す */
+    text-overflow: ellipsis;  /* ... で省略する */
+}
+
 #depth-val { top: 5.8%; left: 66.5%; }
 
 #max-scale-container { position: absolute; top: 0%; left: 0%; pointer-events: auto; z-index: 2000; }
