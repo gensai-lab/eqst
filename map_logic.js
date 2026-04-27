@@ -7,7 +7,7 @@ const MUNICIPALITY_FIXES = {
 
 // 基準サイズ（ここで見た目の大きさを調整してください）
 const BASE_ICON_SIZE = 18;
-const BASE_SHINGEN_SIZE = 20;
+const BASE_SHINGEN_SIZE = 22;
 
 // 共通：住所から正しい市町村キーを抽出する関数
 function getSafeCityKey(addr) {
