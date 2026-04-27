@@ -1,6 +1,24 @@
 // map_logic.js
 
-// --- 【設定】ここでアイコンの大きさを調整できます ---
+// --- 【設定】変換リスト（うまく表示されない場合はここに追加してください） ---
+const MUNICIPALITY_FIXES = {
+    "大町": "大町市",
+};
+
+// 共通：住所から正しい市町村キーを抽出する関数
+function getSafeCityKey(addr) {
+    // 正規表現：都道府県をスキップし、市町村名を取得
+    const match = addr.match(/(?:[都道府県])([^市区町村]+[市区町村])/);
+    let name = match ? match[1] : addr;
+
+    // リストに定義されていればそちらを優先
+    if (MUNICIPALITY_FIXES[name]) {
+        return MUNICIPALITY_FIXES[name];
+    }
+    return name;
+}
+
+// ------------------------------------------------
 const ICON_SIZE = 7;      // 震度アイコンのサイズ（px）
 const SHINGEN_SIZE = 8;   // 震源アイコンのサイズ（px）
 // ------------------------------------------------
@@ -34,13 +52,11 @@ function formatDepth(depth) {
 
 // 5. アイコン描画
 function renderIcons(filteredPoints) {
-    // #icon-layer に描画することで常に地図の手前に表示
     const iconLayer = d3.select("#icon-layer");
     iconLayer.selectAll(".intensity-icon").remove();
 
     filteredPoints.forEach(p => {
-        const match = p.addr.match(/^.+?[市町村区]/);
-        const municipality = match ? match[0] : p.addr;
+        const municipality = getSafeCityKey(p.addr);
         const key = (typeof AREA_MAPPING !== 'undefined' && AREA_MAPPING[p.pref] && AREA_MAPPING[p.pref][municipality]) 
                     ? AREA_MAPPING[p.pref][municipality] 
                     : municipality;
@@ -64,7 +80,6 @@ function renderIcons(filteredPoints) {
 
 // 6. 震源地描画
 function renderHypocenter(hypocenter) {
-    // #icon-layer に描画することで常に地図の手前に表示
     const iconLayer = d3.select("#icon-layer");
     iconLayer.selectAll(".shingen-icon").remove();
 
@@ -117,8 +132,7 @@ async function processEarthquakeData(rawData) {
     
     const maxPoints = {};
     points.forEach(p => {
-        const match = p.addr.match(/^.+?[市町村区]/);
-        const municipality = match ? match[0] : p.addr;
+        const municipality = getSafeCityKey(p.addr);
         const key = (typeof AREA_MAPPING !== 'undefined' && AREA_MAPPING[p.pref] && AREA_MAPPING[p.pref][municipality]) ? AREA_MAPPING[p.pref][municipality] : municipality;
         
         if (!maxPoints[key] || p.scale > maxPoints[key].scale) {
@@ -132,8 +146,7 @@ async function processEarthquakeData(rawData) {
     if (filteredPoints.length > 0) {
         renderIcons(filteredPoints);
         filteredPoints.forEach(p => {
-             const match = p.addr.match(/^.+?[市町村区]/);
-             const municipality = match ? match[0] : p.addr;
+             const municipality = getSafeCityKey(p.addr);
              const key = (typeof AREA_MAPPING !== 'undefined' && AREA_MAPPING[p.pref] && AREA_MAPPING[p.pref][municipality]) ? AREA_MAPPING[p.pref][municipality] : municipality;
              if (pointsData[key]) pointsToFit.push([pointsData[key].lng, pointsData[key].lat]);
         });
