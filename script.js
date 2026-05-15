@@ -7,23 +7,42 @@ const TSUNAMI_IMAGES = {
 
 async function fetchEarthquakeData() {
     try {
-        const response = await fetch('https://api.p2pquake.net/v2/history?codes=551&limit=1');
-        const data = await response.json();
-        if (data.length > 0) renderUI(data[0]);
+        // 地震情報(551)とEEW(556)を同時に取得
+        const [res551, res556] = await Promise.all([
+            fetch('https://api.p2pquake.net/v2/history?codes=551&limit=1'),
+            fetch('https://api.p2pquake.net/v2/history?codes=556&limit=1')
+        ]);
+        
+        const data551 = await res551.json();
+        const data556 = await res556.json();
+
+        if (data551.length > 0) {
+            let eewActive = false;
+            // 556データがある場合、551との時間差を確認（60秒以内なら同一地震とみなす）
+            if (data556.length > 0) {
+                const eqTime = new Date(data551[0].earthquake.time).getTime();
+                const eewTime = new Date(data556[0].earthquake.time).getTime();
+                if (Math.abs(eqTime - eewTime) < 60000) {
+                    eewActive = true;
+                }
+            }
+            renderUI(data551[0], eewActive);
+        }
     } catch (e) { console.error("データ取得エラー:", e); }
 }
 
-function renderUI(eq) {
+function renderUI(eq, eewActive) {
     if (!eq || !eq.earthquake) return;
     const e = eq.earthquake;
 
     document.getElementById('time-val').innerHTML = formatDate(e.time);
+    // マグニチュードを .0 固定表示
     document.getElementById('mag-val').innerText = `M${e.hypocenter.magnitude.toFixed(1)}`;
     document.getElementById('hypo-val').innerText = e.hypocenter.name;
     
-    // 【修正箇所】深さが0kmの場合は「ごく浅い」と表示する処理
+    // 【修正】深さが0以外なら「約」を付与
     const depthVal = e.hypocenter.depth;
-    document.getElementById('depth-val').innerText = (depthVal === 0) ? "ごく浅い" : `${depthVal}km`;
+    document.getElementById('depth-val').innerText = (depthVal === 0) ? "ごく浅い" : `約${depthVal}km`;
 
     // 震度アイコン
     const scaleContainer = document.getElementById('max-scale-container');
@@ -35,12 +54,13 @@ function renderUI(eq) {
         scaleContainer.appendChild(img);
     }
 
-    // バナー更新
+    // 津波バナー
     const tsunamiImg = document.getElementById('status-tsunami');
     tsunamiImg.src = TSUNAMI_IMAGES[e.domesticTsunami] || TSUNAMI_IMAGES['None'];
     tsunamiImg.classList.add('active');
 
-    document.getElementById('status-eew').classList.toggle('active', eq.isEew === true);
+    // 【修正】eewActive（556監視結果）または元々のisEewでバナーを光らせる
+    document.getElementById('status-eew').classList.toggle('active', eewActive === true || eq.isEew === true);
     document.getElementById('status-enchi').classList.toggle('active', e.hypocenter.name.includes('海外'));
 
     sendToMap(eq);
